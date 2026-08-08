@@ -83,13 +83,15 @@ afterEach(() => jest.restoreAllMocks());
 
 ### Rule: jest.mock Factory Cannot Reference Outer Variables
 
-Jest hoists `jest.mock()` above all imports. Factory functions run before module-scoped variables are initialized.
+Calls to `jest.mock()` are hoisted above all imports, so a variable cannot be
+defined first and then used in the factory. Jest makes an exception for names
+beginning with `mock`.
 
 ```javascript
-// INCORRECT — mockUser is not initialized when factory runs
-const mockUser = { id: 1, name: 'Alice' };
+// INCORRECT — `fakeUser` does not begin with `mock`
+const fakeUser = { id: 1, name: 'Alice' };
 jest.mock('./userService', () => ({
-  getUser: jest.fn(() => mockUser), // ReferenceError
+  getUser: jest.fn(() => fakeUser),
 }));
 
 // CORRECT — inline the value

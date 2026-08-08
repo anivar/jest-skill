@@ -9,16 +9,16 @@ tags: mock, hoisting, factory, jest.mock, scope
 
 ## Problem
 
-Jest automatically hoists `jest.mock()` calls to the top of the file, before any `import` or `require` statements. This means the factory function runs before any module-scoped variables are initialized. Referencing them causes `ReferenceError` or silently uses `undefined`.
+Calls to `jest.mock()` are hoisted to the top of the file, so it is not possible to first define a variable and then use it in the factory. Jest makes an exception for variables whose name starts with the word `mock`.
 
 ## Incorrect
 
 ```javascript
-// BUG: mockUser is not initialized when jest.mock runs (hoisted above this line)
-const mockUser = { id: 1, name: 'Alice' };
+// BUG: `fakeUser` does not start with `mock`, so the factory may not reference it
+const fakeUser = { id: 1, name: 'Alice' };
 
 jest.mock('./userService', () => ({
-  getUser: jest.fn(() => mockUser), // ReferenceError: mockUser is not defined
+  getUser: jest.fn(() => fakeUser),
 }));
 ```
 
@@ -38,8 +38,7 @@ const mockUser = { id: 1, name: 'Alice' };
 jest.mock('./userService', () => ({
   getUser: jest.fn(() => mockUser),
 }));
-// Works because Jest allows variables starting with `mock` to be referenced in factories.
-// The variable must be declared with `const`, `let`, or `var` — not a function call result.
+// Works because Jest makes an exception for variables whose name begins with `mock`.
 ```
 
 ```javascript
@@ -57,7 +56,6 @@ test('returns user', () => {
 
 The `mock` prefix exception exists specifically for this hoisting issue. Jest's Babel plugin detects variables starting with `mock` and allows them in the hoisted scope. However, this is fragile:
 
-- The variable must be a simple declaration, not a function call like `const mockUser = createUser()`.
 - Misspelling the prefix (e.g., `mocked`, `my_mock`) breaks the exception.
 - The variable is still uninitialized if it depends on other imports.
 
