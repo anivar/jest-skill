@@ -32,31 +32,38 @@ test('polls for data', () => {
 
 ## Correct
 
+`poll()` schedules its `setTimeout` **inside** a `.then()`, so the timer does not
+exist until the promise callback has run. The synchronous timer methods do not
+flush promise callbacks, so at the moment they are called there is nothing
+queued. Use the async variants, which run scheduled promise callbacks before
+advancing the clock — and note the counts include the call from the initial
+fetch, not just the timer-driven ones.
+
 ```javascript
-test('polls for data', () => {
+test('polls for data', async () => {
   jest.useFakeTimers();
   const cb = jest.fn();
   poll(cb);
 
-  // Run only the timers currently in the queue — does not chase new ones
-  jest.runOnlyPendingTimers();
-  expect(cb).toHaveBeenCalledTimes(1);
-
-  // Advance one more cycle
-  jest.runOnlyPendingTimers();
+  // Async variant: lets the pending promise callback run, so the first result
+  // is delivered and the next timer is queued.
+  await jest.runOnlyPendingTimersAsync();
   expect(cb).toHaveBeenCalledTimes(2);
+
+  await jest.runOnlyPendingTimersAsync();
+  expect(cb).toHaveBeenCalledTimes(3);
 });
 ```
 
 ```javascript
-// Alternative: advanceTimersByTime for precise control
-test('polls every second', () => {
+// Alternative: advanceTimersByTimeAsync for precise control
+test('polls every second', async () => {
   jest.useFakeTimers();
   const cb = jest.fn();
   poll(cb);
 
-  jest.advanceTimersByTime(3000); // advance 3 seconds
-  expect(cb).toHaveBeenCalledTimes(3);
+  await jest.advanceTimersByTimeAsync(3000);
+  expect(cb).toHaveBeenCalledTimes(4); // 1 from the initial fetch + 3 timer-driven
 });
 ```
 
@@ -65,9 +72,11 @@ test('polls every second', () => {
 | Method | Behavior | Safe for recursive timers |
 |---|---|---|
 | `runAllTimers()` | Runs all timers including newly created ones | No — infinite loop |
-| `runOnlyPendingTimers()` | Runs only timers in the queue at call time | Yes |
-| `advanceTimersByTime(ms)` | Advances clock by `ms`, running timers that fire | Yes |
-| `advanceTimersToNextTimer()` | Advances to the next timer and runs it | Yes |
+| `runOnlyPendingTimers()` | Runs only timers in the queue at call time | Yes, but does not flush promise callbacks |
+| `advanceTimersByTime(ms)` | Advances clock by `ms`, running timers that fire | Yes, but does not flush promise callbacks |
+| `advanceTimersToNextTimer()` | Advances to the next timer and runs it | Yes, but does not flush promise callbacks |
+| `runOnlyPendingTimersAsync()` | Asynchronous equivalent of `runOnlyPendingTimers()`; allows scheduled promise callbacks to execute before running the timers | Yes — use when the timer is scheduled inside a promise callback |
+| `advanceTimersByTimeAsync(ms)` | Asynchronous equivalent of `advanceTimersByTime(ms)`; allows scheduled promise callbacks to execute | Yes — use when the timer is scheduled inside a promise callback |
 
 ## Why
 

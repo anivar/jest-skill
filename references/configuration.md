@@ -208,19 +208,16 @@ module.exports = {
 };
 ```
 
-### `setupFilesAfterFramework` / `setupFilesAfterFramework` → `setupFilesAfterFramework`
+### `setupFilesAfterEnv`
 
-### `setupFilesAfterFramework`
-
-(Jest 30) Replaces `setupFilesAfterFramework`.
-
-### `setupFilesAfterFramework`
-
-Run after test framework is installed. Use for custom matchers and global test setup.
+Default: `[]`. A list of paths to modules that run some code to configure or set
+up the testing framework before each test file in the suite is executed. Use it
+for custom matchers (`jest-extended`, `@testing-library/jest-dom`) and for
+`beforeEach` / `afterEach` hooks you want everywhere.
 
 ```javascript
 module.exports = {
-  setupFilesAfterFramework: ['./jest.setup.js'],
+  setupFilesAfterEnv: ['./jest.setup.js'],
 };
 ```
 

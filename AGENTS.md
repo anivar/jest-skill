@@ -315,6 +315,11 @@ jest.runAllTimers(); // hangs
 jest.runOnlyPendingTimers(); // one cycle at a time
 // or
 jest.advanceTimersByTime(3000); // precise control
+
+// If the recursive timer is scheduled inside a promise callback, the sync
+// methods see nothing queued yet — use the async variants:
+await jest.runOnlyPendingTimersAsync();
+await jest.advanceTimersByTimeAsync(3000);
 ```
 
 ### Rule: Use Async Timer Methods When Promises Are Involved

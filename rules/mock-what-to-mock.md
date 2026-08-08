@@ -31,8 +31,10 @@ jest.useFakeTimers({ now: new Date('2024-01-01') });
 // MOCK: Random values for determinism
 jest.spyOn(Math, 'random').mockReturnValue(0.5);
 
-// MOCK: Environment variables
-jest.replaceProperty(process.env, 'API_KEY', 'test-key');
+// MOCK: Environment variables — replace the whole `env` object.
+// `replaceProperty` requires the property to already exist, and the variable you
+// want to fake is usually the one that is unset.
+jest.replaceProperty(process, 'env', { ...process.env, API_KEY: 'test-key' });
 
 // MOCK: Third-party services (email, payments, analytics)
 jest.mock('./email-service');

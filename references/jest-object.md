@@ -171,9 +171,11 @@ jest.retryTimes(3, { logErrorsBeforeRetry: true });
 ### `jest.replaceProperty(object, propertyKey, value)`
 
 Replaces a property value on an object. Restored by `jest.restoreAllMocks()`.
+The property must already exist on the object, so to fake an environment
+variable that may be unset, replace `process.env` itself.
 
 ```javascript
-jest.replaceProperty(process.env, 'NODE_ENV', 'test');
+jest.replaceProperty(process, 'env', { ...process.env, NODE_ENV: 'test' });
 // later restored automatically if restoreMocks: true
 ```
 

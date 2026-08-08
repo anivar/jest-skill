@@ -44,7 +44,7 @@ expect(value).toBeGreaterThan(3);
 expect(value).toBeGreaterThanOrEqual(3);
 expect(value).toBeLessThan(5);
 expect(value).toBeLessThanOrEqual(5);
-expect(0.1 + 0.2).toBeCloseTo(0.3);          // default precision: 5
+expect(0.1 + 0.2).toBeCloseTo(0.3);          // default numDigits: 2 (criterion < 0.005)
 expect(0.1 + 0.2).toBeCloseTo(0.3, 10);      // custom precision
 expect(NaN).toBeNaN();
 ```

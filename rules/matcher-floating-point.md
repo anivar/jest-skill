@@ -28,7 +28,7 @@ test('calculates tax', () => {
 
 ```javascript
 test('calculates total', () => {
-  expect(0.1 + 0.2).toBeCloseTo(0.3); // PASSES — default precision is 5
+  expect(0.1 + 0.2).toBeCloseTo(0.3); // PASSES — default numDigits is 2 (criterion < 0.005)
 });
 
 test('calculates tax', () => {
@@ -38,13 +38,15 @@ test('calculates tax', () => {
 
 ## Why
 
-`toBeCloseTo(expected, precision)` checks that `|received - expected| < 10^(-precision) / 2`. The default precision is `5`, meaning differences smaller than `0.000005` are considered equal.
+`toBeCloseTo(expected, numDigits)` checks that `Math.abs(expected - received) < 10 ** -numDigits / 2`. The default `numDigits` is `2`, so the criterion is `< 0.005` — differences smaller than that are considered equal. That is far looser than it looks: pass `numDigits` explicitly whenever you actually need precision.
 
-| Precision | Tolerance | Use case |
+| numDigits | Tolerance | Use case |
 |---|---|---|
 | 0 | 0.5 | Rough estimates |
-| 2 | 0.005 | Currency (2 decimal places) |
-| 5 | 0.000005 | General floating-point (default) |
+| 2 | 0.005 | Currency (2 decimal places) — **default** |
+| 5 | 0.000005 | Tighter floating-point comparison |
 | 10 | 5e-11 | Scientific computation |
+
+`expect.closeTo(number, numDigits?)`, for use inside `objectContaining` / `arrayContaining`, takes the same default.
 
 **When to use `toBe` with numbers**: Only for integers or values you know are exact (e.g., array `.length`, counter increments, enum values).
