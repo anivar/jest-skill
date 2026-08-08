@@ -55,13 +55,29 @@ module.exports = {
 };
 ```
 
+```javascript
+// Option 3: `using` for a scope-bound spy — needs explicit resource management
+// (TypeScript >= 5.2 or @babel/plugin-proposal-explicit-resource-management)
+test('logs a warning', () => {
+  using spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  console.warn('watch out');
+  expect(spy).toHaveBeenCalled();
+}); // spy.mockRestore() runs on block exit — including when the assertion throws
+```
+
 ## Why
 
 Setting `restoreMocks: true` in config is the safest approach because:
 
 1. It applies globally — no test file can forget.
 2. It restores the original implementation, not just a no-op `jest.fn()`.
-3. It covers `jest.spyOn`, `jest.fn` used as replacements, and `jest.replaceProperty`.
+3. It covers `jest.spyOn` and `jest.replaceProperty`. It does **not** cover methods you
+   replaced by hand with `jest.fn()`. Upstream: "`jest.restoreAllMocks()` only works for
+   mocks created with `jest.spyOn()` and properties replaced with `jest.replaceProperty()`;
+   other mocks will require you to manually restore them." Observed on jest 30.4.1 with
+   `restoreMocks: true`: a hand-assigned `obj.method = jest.fn(...)` is left completely
+   untouched between tests — still the fake, still carrying its implementation. Prefer
+   `jest.spyOn(obj, 'method')` over manual assignment so restore applies.
 
 If you only need the spy for a single assertion, use the spy's own `.mockRestore()`:
 
@@ -72,3 +88,20 @@ test('one-off spy', () => {
   spy.mockRestore(); // restored immediately
 });
 ```
+
+That trailing line is skipped if the assertion throws — which is what Option 3 above fixes.
+Upstream describes `using` as "semantically equal" to a `try`/`finally` that calls
+`spy.mockRestore()`. It also works with a bare block, which scopes the spy to part of a test:
+
+```javascript
+test('testing something', () => {
+  {
+    using spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    setupStepThatWillLogAWarning();
+  }
+  // here, console.warn is already restored to the original value
+});
+```
+
+Keep `restoreMocks: true` as the default — `using` needs transpiler support, and if you get a
+warning that `Symbol.dispose` does not exist you also need the polyfill documented upstream.

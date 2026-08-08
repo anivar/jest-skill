@@ -62,7 +62,7 @@ jest.mock('./utils/api');
 
 ### Node modules
 
-Place mock at project root adjacent to `node_modules/`. **Auto-activated** — no `jest.mock()` needed.
+Place mock at project root adjacent to `node_modules/`. **Auto-activated** — no `jest.mock()` needed, unless you configured `roots` to point somewhere other than the project root. Node **built-in** modules (`fs`, `path`, …) are the exception: they still require an explicit `jest.mock('fs')`.
 
 ```
 project/
@@ -89,6 +89,16 @@ const fs = jest.createMockFromModule('fs');
 fs.readFileSync.mockReturnValue('mock content');
 module.exports = fs;
 ```
+
+```javascript
+// in the test file — REQUIRED for Node built-ins; they are not mocked by default
+jest.mock('fs');
+```
+
+Upstream: "If we want to mock Node's built-in modules (e.g.: `fs` or `path`), then explicitly
+calling e.g. `jest.mock('path')` is **required**, because built-in modules are not mocked by
+default." Without that line the manual mock never activates and the test hits the real
+filesystem.
 
 ## jest.doMock — Non-Hoisted Mock
 
@@ -142,8 +152,12 @@ jest.mock('./utils', () => {
 ## ESM Mocking — jest.unstable_mockModule
 
 For native ES modules (`import`/`export`). Must use `await import()` after registering the mock.
+In ESM the `jest` object is not a global — import it from `@jest/globals` (or use
+`import.meta.jest`, which is the same object).
 
 ```javascript
+import { jest } from '@jest/globals';
+
 jest.unstable_mockModule('./api.mjs', () => ({
   fetchUser: jest.fn(() => ({ id: 1 })),
 }));
@@ -154,13 +168,40 @@ test('ESM mock', async () => {
 });
 ```
 
-### Async factory
+### Partial ESM mock
+
+Resolve the real namespace **before** registering the mock. A factory that `import()`s the
+module it is mocking re-enters itself; on jest 30.4.1 that recursion crashes the worker with a
+heap out-of-memory error.
 
 ```javascript
-jest.unstable_mockModule('./utils.mjs', async () => {
+import { jest } from '@jest/globals';
+
+test('partial ESM mock', async () => {
   const actual = await import('./utils.mjs');
-  return { ...actual, format: jest.fn() };
+
+  jest.unstable_mockModule('./utils.mjs', () => ({
+    ...actual,
+    format: jest.fn(() => 'formatted'),
+  }));
+
+  const { format, formatCurrency } = await import('./utils.mjs');
+  expect(format()).toBe('formatted');
+  expect(formatCurrency(5)).toBe('$5'); // real implementation
 });
+```
+
+### Undoing an ESM mock
+
+`jest.unstable_unmockModule` is the ESM counterpart to `jest.unmock` — it undoes an
+`unstable_mockModule` (or an automock) so a subsequent dynamic `import()` resolves the real
+module.
+
+```javascript
+import { jest } from '@jest/globals';
+
+jest.unstable_unmockModule('./esm-module.js');
+const originalModule = await import('./esm-module.js');
 ```
 
 ## Hoisting Behavior
@@ -171,15 +212,20 @@ jest.unstable_mockModule('./utils.mjs', async () => {
 | `jest.unmock()` | Yes | Undo a mock |
 | `jest.doMock()` | No | Per-test mocking |
 | `jest.dontMock()` | No | Per-test unmocking |
+| `jest.unstable_mockModule()` | No | ESM mocking (factory required) |
+| `jest.unstable_unmockModule()` | No | Undo an ESM mock |
 
 ### Factory variable restrictions (hoisting)
 
-```javascript
-// FAILS: mockData is not initialized when factory runs
-const mockData = { id: 1 };
-jest.mock('./api', () => ({ getData: () => mockData }));
+Calls to `jest.mock()` are hoisted above all imports, so a variable cannot be defined first and
+then used in the factory. Jest makes an exception for names beginning with `mock`.
 
-// WORKS: variables prefixed with `mock` are allowed
+```javascript
+// NOT ALLOWED: `fakeData` does not begin with `mock`
+const fakeData = { id: 1 };
+jest.mock('./api', () => ({ getData: () => fakeData }));
+
+// ALLOWED: Jest makes an exception for variables whose name begins with `mock`
 const mockData = { id: 1 };
 jest.mock('./api', () => ({ getData: () => mockData }));
 ```

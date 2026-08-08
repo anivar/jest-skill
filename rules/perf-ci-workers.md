@@ -9,18 +9,18 @@ tags: perf, ci, runInBand, maxWorkers, workers, memory, containers
 
 ## Problem
 
-By default, Jest spawns one worker per CPU core. In CI environments (Docker containers, GitHub Actions, etc.), the container often reports the host machine's CPU count rather than the allocated cores. A 2-CPU container on a 64-core host spawns 64 workers, causing memory exhaustion, OOM kills, and flaky tests.
+By default, Jest spawns one worker per CPU core minus one for the main thread (half the cores in watch mode). In CI environments (Docker containers, GitHub Actions, etc.), the container often reports the host machine's CPU count rather than the allocated cores. A 2-CPU container on a 64-core host spawns **63** workers, causing memory exhaustion, OOM kills, and flaky tests.
 
 ## Incorrect
 
 ```bash
 # BUG: Default workers — CI container with 2 CPUs reports 64 cores from host
 npx jest
-# Spawns 64 workers → OOM kill → flaky CI
+# Spawns 63 workers → OOM kill → flaky CI
 ```
 
 ```bash
-# BUG: --maxWorkers=100% is the default behavior — same problem
+# BUG: --maxWorkers=100% requests one worker per reported core — one MORE than the default, same OOM
 npx jest --maxWorkers=100%
 ```
 

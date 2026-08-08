@@ -81,3 +81,5 @@ test('polls every second', async () => {
 ## Why
 
 Recursive timers are extremely common: `setInterval`, polling loops, retry-with-backoff, `requestAnimationFrame` polyfills, and debounce/throttle implementations all create new timers from within timer callbacks. Always use `runOnlyPendingTimers` or `advanceTimersByTime` unless you are certain no recursive timers exist.
+
+For code driving the **real** `requestAnimationFrame` (jsdom environment) rather than a `setTimeout`-based polyfill, use `jest.advanceTimersToNextFrame()` instead of guessing a 16ms `advanceTimersByTime` — it advances by exactly the milliseconds needed to run the frame callbacks currently scheduled. The advice above still stands for polyfills, which genuinely are a recursive-timer source.

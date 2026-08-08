@@ -93,11 +93,23 @@ const mock = jest.fn((x) => x + 1);
 mock.call(thisArg, 10);
 mock(20);
 
-mock.mock.calls;          // [[10], [20]] — arguments of each call
+mock.mock.calls;           // [[10], [20]] — arguments of each call
 mock.mock.results;         // [{ type: 'return', value: 11 }, { type: 'return', value: 21 }]
-mock.mock.instances;       // [thisArg, undefined] — `this` value for each call
-mock.mock.contexts;        // same as instances (Jest 29.6+)
+mock.mock.contexts;        // [thisArg, undefined] — the `this` value each call received
 mock.mock.lastCall;        // [20] — arguments of last call
+```
+
+`mock.instances` is a different array: it holds "all the object instances that have been
+instantiated from this mock function using `new`". Use it when the mock stands in for a
+constructor.
+
+```javascript
+const Ctor = jest.fn();
+const a = new Ctor();
+const b = new Ctor();
+
+Ctor.mock.instances[0] === a; // true
+Ctor.mock.instances[1] === b; // true
 ```
 
 ### Result types
@@ -112,9 +124,12 @@ mock.mock.lastCall;        // [20] — arguments of last call
 
 | Method | Instance version | Config version | Effect |
 |---|---|---|---|
-| `mockClear()` | `mock.mockClear()` | `clearMocks: true` | Clears `mock.calls`, `mock.instances`, `mock.results` |
+| `mockClear()` | `mock.mockClear()` | `clearMocks: true` | Clears `mock.calls`, `mock.instances`, `mock.contexts`, `mock.results` |
 | `mockReset()` | `mock.mockReset()` | `resetMocks: true` | `mockClear()` + removes implementation (returns `undefined`) |
 | `mockRestore()` | `mock.mockRestore()` | `restoreMocks: true` | `mockReset()` + restores original implementation (spyOn only) |
+
+`mockFn.mockClear()` replaces `mockFn.mock` rather than resetting its properties, so never
+assign `mockFn.mock` to another variable — you will read stale data after a clear.
 
 ```javascript
 // Config-level (recommended)
@@ -139,6 +154,9 @@ expect(fn).toHaveBeenCalledWith('a', 'b');       // any call had these args
 expect(fn).toHaveBeenLastCalledWith('c');         // last call had these args
 expect(fn).toHaveBeenNthCalledWith(1, 'a', 'b'); // first call had these args
 ```
+
+Jest 30 removed the short aliases (`toBeCalled`, `toBeCalledWith`, `lastCalledWith`,
+`nthCalledWith`, `toReturn*`, …) — see `references/matchers.md`.
 
 ## Mocking Modules
 

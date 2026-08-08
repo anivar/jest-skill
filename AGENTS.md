@@ -2,7 +2,7 @@
 
 > This document is for AI agents and LLMs to follow when writing, reviewing, or debugging Jest tests. It compiles all rules and references into a single executable guide.
 
-**Baseline:** jest ^29.0.0 / ^30.0.0 with JavaScript or TypeScript
+**Baseline:** jest ^30.0.0 with JavaScript or TypeScript (audited against jest 30.4.2)
 
 ---
 
@@ -59,9 +59,9 @@ afterEach(() => {
 |---|---|---|---|
 | `clearAllMocks` | Yes | No | No |
 | `resetAllMocks` | Yes | Yes (→ `jest.fn()`) | No |
-| `restoreAllMocks` | Yes | Yes | Yes |
+| `restoreAllMocks` | Yes | Yes | Yes — `spyOn` / `replaceProperty` only |
 
-Prefer `restoreMocks: true` in `jest.config.js` as the safest default.
+Prefer `restoreMocks: true` in `jest.config.js` as the safest default. It covers `jest.spyOn` and `jest.replaceProperty` only — a method you overwrote by hand with `jest.fn()` is never restored, so use `jest.spyOn` instead of manual assignment.
 
 ### Rule: Always Restore jest.spyOn
 
@@ -79,6 +79,13 @@ test('suppresses errors', () => {
 // CORRECT
 afterEach(() => jest.restoreAllMocks());
 // or: jest.config.js → { restoreMocks: true }
+
+// CORRECT (scope-bound) — needs explicit-resource-management transpilation
+test('logs a warning', () => {
+  using spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  console.warn('watch out');
+  expect(spy).toHaveBeenCalled();
+}); // mockRestore() runs on block exit, even if the assertion throws
 ```
 
 ### Rule: jest.mock Factory Cannot Reference Outer Variables
@@ -248,7 +255,7 @@ test('callback test', (done) => {
 });
 ```
 
-Prefer async/await over `done`. Jest 30 deprecates `done`.
+Prefer async/await over `done`; Jest still supports `done` for callback-based APIs. Never combine them — Jest throws if the same test function takes `done` and returns a promise.
 
 ---
 
@@ -273,6 +280,8 @@ expect(getUser()).toStrictEqual({ name: 'Alice' }); // stricter: checks undefine
 | `toStrictEqual` | No | Yes | Yes | Yes |
 
 Use `toBe` for primitives, `toStrictEqual` for objects (default choice), `toEqual` when you intentionally ignore `undefined` properties.
+
+Jest 30: "Non-enumerable object properties are now excluded from object matchers by default. This could affect `expect.objectContaining` or equality checks." Jest 30 also removed the deprecated aliases — `toBeCalled`, `toBeCalledTimes`, `toBeCalledWith`, `lastCalledWith`, `nthCalledWith`, `toReturn`, `toReturnTimes`, `toReturnWith`, `lastReturnedWith`, `nthReturnedWith`, `toThrowError` — use the canonical `toHaveBeen…` / `toHaveReturned…` names and `toThrow`. And `expect.arrayOf(matcher)` asserts *every* element matches, where `expect.arrayContaining([...])` asserts the array merely *includes* the listed items.
 
 ### Rule: Use toBeCloseTo for Floats
 
@@ -345,6 +354,9 @@ jest.useFakeTimers();
 
 // CORRECT
 jest.useFakeTimers({ doNotFake: ['Date', 'performance'] });
+// `doNotFake` accepts 16 values, including nextTick, hrtime, requestAnimationFrame,
+// cancelAnimationFrame, requestIdleCallback, cancelIdleCallback and Temporal —
+// see rules/timer-selective-faking.md for the full list.
 ```
 
 ---
@@ -414,12 +426,15 @@ test.each(cases)('$name', ({ input, expected }) => {
 | User module (`./utils/helpers`) | `./utils/__mocks__/helpers.js` | No — needs `jest.mock()` |
 | Node module (`axios`) | `<rootDir>/__mocks__/axios.js` | Yes |
 | Scoped (`@scope/pkg`) | `__mocks__/@scope/pkg.js` | Yes |
+| Core Node module (`fs`, `path`) | `<rootDir>/__mocks__/fs.js` | No — `jest.mock('fs')` required; built-ins are not mocked by default |
 
 ### Rule: Use jest.unstable_mockModule for ESM
 
-`jest.mock()` relies on CJS hoisting. For native ESM, use `jest.unstable_mockModule` + dynamic `import()`.
+`jest.mock` "does *not* apply when the resolved file is ESM - `jest.mock` is for CJS targets". For native ESM, use `jest.unstable_mockModule` + dynamic `import()`, and import the `jest` object explicitly — it is not a global in ESM.
 
 ```javascript
+import { jest } from '@jest/globals'; // or import.meta.jest — same object
+
 jest.unstable_mockModule('./api.mjs', () => ({
   fetchUser: jest.fn(),
 }));
@@ -429,6 +444,10 @@ test('ESM mock', async () => {
   fetchUser.mockReturnValue({ id: 1 });
   expect(fetchUser()).toEqual({ id: 1 });
 });
+
+// Undo it with the ESM counterpart to jest.unmock
+jest.unstable_unmockModule('./api.mjs');
+const originalModule = await import('./api.mjs');
 ```
 
 ### Rule: jest.doMock + resetModules for Per-Test Mocks
@@ -511,12 +530,13 @@ module.exports = {
 
 ### Rule: Configure transformIgnorePatterns for ESM Packages
 
-Jest's default skips `node_modules/`. ESM-only packages need a negative lookahead.
+The default `['/node_modules/', '\\.pnp\\.[^\\/]+$']` skips `node_modules/` and Yarn PnP files. ESM-only packages need a negative lookahead, and overriding replaces the whole array — carry the PnP entry over.
 
 ```javascript
 module.exports = {
   transformIgnorePatterns: [
     '/node_modules/(?!(uuid|nanoid|chalk)/)',
+    '\\.pnp\\.[^\\/]+$',
   ],
 };
 ```
@@ -562,6 +582,14 @@ test('fresh module', () => {
     const app = require('./app');
     expect(app.isDebug()).toBe(true);
   });
+});
+```
+
+`jest.isolateModules` takes a synchronous callback; for ESM or any async work inside the sandbox use `jest.isolateModulesAsync` and `await` it, or the registry is restored before the callback settles.
+
+```javascript
+await jest.isolateModulesAsync(async () => {
+  const mod = await import('./counter');
 });
 ```
 

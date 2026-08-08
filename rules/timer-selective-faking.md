@@ -9,7 +9,7 @@ tags: timer, useFakeTimers, doNotFake, Date, performance, selective
 
 ## Problem
 
-`jest.useFakeTimers()` replaces all timer-related globals by default: `setTimeout`, `setInterval`, `setImmediate`, `clearTimeout`, `clearInterval`, `clearImmediate`, `Date`, `performance`, and `queueMicrotask`. This can break libraries that rely on real `Date.now()` or `performance.now()` for non-timer purposes (e.g., logging, UUID generation, cache TTL calculations).
+`jest.useFakeTimers()` replaces all timer-related globals by default (`doNotFake` defaults to `[]`), including `setTimeout`, `setInterval`, `setImmediate`, `clearTimeout`, `clearInterval`, `clearImmediate`, `Date`, `performance`, and `queueMicrotask` — see the full list below. This can break libraries that rely on real `Date.now()` or `performance.now()` for non-timer purposes (e.g., logging, UUID generation, cache TTL calculations).
 
 ## Incorrect
 
@@ -47,7 +47,7 @@ test('measures performance', () => {
 
 ## Fakeable APIs
 
-All APIs that `useFakeTimers` can fake:
+Every value `doNotFake` accepts — this is the whole `FakeableAPI` union:
 
 | API | Default faked | Common reason to keep real |
 |---|---|---|
@@ -60,6 +60,25 @@ All APIs that `useFakeTimers` can fake:
 | `Date` | Yes | UUID generation, logging, cache TTL |
 | `performance` | Yes | Benchmarking, metrics libraries |
 | `queueMicrotask` | Yes | Promise-based code, React rendering |
+| `hrtime` | Yes — node env (`process.hrtime`) | Benchmarking |
+| `nextTick` | Yes — node env (`process.nextTick`) | Libraries driven by the process tick |
+| `requestAnimationFrame` | Yes — jsdom env | rAF harnesses that drive their own clock |
+| `cancelAnimationFrame` | Yes — jsdom env | Same as above |
+| `requestIdleCallback` | Yes — jsdom env | Idle-scheduling libraries |
+| `cancelIdleCallback` | Yes — jsdom env | Same as above |
+| `Temporal` | Yes | Code reading a real `Temporal` clock |
+
+Upstream on what is swapped where: fake timers replace `Date`, `performance.now()`,
+`queueMicrotask()`, `setImmediate()`, `clearImmediate()`, `setInterval()`, `clearInterval()`,
+`setTimeout()`, `clearTimeout()`; "In Node environment `process.hrtime`, `process.nextTick()`
+and in JSDOM environment `requestAnimationFrame()`, `cancelAnimationFrame()`,
+`requestIdleCallback()`, `cancelIdleCallback()` will be replaced as well."
+
+```javascript
+// Common real uses of the option beyond Date/performance
+jest.useFakeTimers({ doNotFake: ['nextTick'] });
+jest.useFakeTimers({ doNotFake: ['requestAnimationFrame', 'cancelAnimationFrame'] });
+```
 
 ## Why
 

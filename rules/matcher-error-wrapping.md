@@ -21,11 +21,19 @@ test('rejects negative age', () => {
 ```
 
 ```javascript
-// BUG: Same problem with async — rejects before .rejects can catch it
+// BUG: missing await — the test completes before the assertion settles
 test('rejects invalid input', async () => {
-  expect(fetchUser(null)).rejects.toThrow(); // UNCAUGHT REJECTION
+  expect(fetchUser(null)).rejects.toThrow(); // NOT AWAITED
 });
 ```
+
+This is a **different** failure from the synchronous case above. Passing the
+already-created promise into `expect()` is the correct form for `.rejects`; the
+defect is the missing `await`, not a missing arrow function. Observed on jest
+30.4.1: when the assertion would have held, the test passes; when it would have
+failed, the failure is not reported against this test — it escapes as an uncaught
+error that takes the whole file down (`Test suite failed to run`). Do **not**
+"fix" it by wrapping the call in `() =>`.
 
 ## Correct
 

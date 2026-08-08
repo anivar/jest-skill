@@ -27,6 +27,21 @@ expect({ a: 1, b: undefined }).not.toStrictEqual({ a: 1 }); // fails — b is mi
 expect(new Cat('Mimi')).not.toStrictEqual({ name: 'Mimi' }); // fails — different class
 ```
 
+### Non-enumerable properties
+
+Jest 30 breaking change: "Non-enumerable object properties are now excluded from object
+matchers by default. This could affect `expect.objectContaining` or equality checks." Jest 29
+included them, so an assertion that used to fail can now pass. Audit anything built with
+`Object.defineProperty(obj, key, { enumerable: false })`.
+
+```javascript
+const o = { a: 1 };
+Object.defineProperty(o, 'hidden', { value: 2, enumerable: false });
+
+expect(o).toEqual({ a: 1 });        // passes — `hidden` is not compared
+expect(o).toStrictEqual({ a: 1 });  // passes
+```
+
 ## Truthiness Matchers
 
 | Matcher | Matches |
@@ -107,9 +122,26 @@ expect.stringContaining('sub')             // string containing substring
 expect.stringMatching(/pattern/)           // string matching regex
 expect.arrayContaining([1, 2])             // array containing these items
 expect.objectContaining({ key: 'val' })    // object containing these properties
+expect.arrayOf(expect.any(String))         // EVERY element matches
 expect.not.arrayContaining([3])            // array NOT containing 3
 expect.not.objectContaining({ bad: true }) // object NOT containing bad
+expect.not.arrayOf(expect.any(String))     // NOT every element matches
 expect.closeTo(0.3, 5)                     // number close to 0.3
+```
+
+### `arrayContaining` vs `arrayOf`
+
+They are not two spellings of the same check. `arrayContaining` asserts the received array
+**includes** the listed items (the expected array is a subset). `arrayOf` asserts **every**
+element of the received array matches one matcher — the right tool for homogeneous collections.
+
+```javascript
+expect(['Alice', 1]).toEqual(expect.arrayContaining(['Alice']));     // passes
+expect(['Alice', 1]).not.toEqual(expect.arrayOf(expect.any(String))); // 1 is not a String
+
+expect(users).toEqual(
+  expect.arrayOf(expect.objectContaining({ id: expect.any(Number) }))
+);
 ```
 
 ### Usage in assertions
@@ -171,3 +203,10 @@ expect(fn).toHaveReturnedWith(value);
 expect(fn).toHaveLastReturnedWith(value);
 expect(fn).toHaveNthReturnedWith(1, value);
 ```
+
+**Jest 30 removed the short aliases.** `toBeCalled`, `toBeCalledTimes`, `toBeCalledWith`,
+`lastCalledWith`, `nthCalledWith`, `toReturn`, `toReturnTimes`, `toReturnWith`,
+`lastReturnedWith`, `nthReturnedWith`, and `toThrowError` are gone — use the canonical names
+above, and `toThrow` in place of `toThrowError`. `eslint-plugin-jest`'s `no-alias-methods` rule
+autofixes existing code. Note that `toThrowErrorMatchingSnapshot` and
+`toThrowErrorMatchingInlineSnapshot` are *not* aliases; they remain current.

@@ -54,7 +54,11 @@ test('second', () => {
 |---|---|---|---|
 | `clearAllMocks` | Yes | No | No |
 | `resetAllMocks` | Yes | Yes (resets to `jest.fn()`) | No |
-| `restoreAllMocks` | Yes | Yes | Yes |
+| `restoreAllMocks` | Yes | Yes | Yes — `spyOn` / `replaceProperty` only |
+
+`restoreAllMocks` reaches less far than the other two: upstream restricts it to mocks created
+with `jest.spyOn()` and properties replaced with `jest.replaceProperty()`. A method you
+overwrote by hand with `jest.fn()` is not restored — see `rules/mock-spy-restore.md`.
 
 ## Why
 

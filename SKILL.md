@@ -3,23 +3,23 @@ name: jest
 description: >
   Jest best practices, patterns, and API guidance for JavaScript/TypeScript testing.
   Covers mock design, async testing, matchers, timer mocks, snapshots, module mocking,
-  configuration, and CI optimization. Baseline: jest ^29.0.0 / ^30.0.0.
+  configuration, and CI optimization. Baseline: jest ^30.0.0.
   Triggers on: jest imports, describe, it, test, expect, jest.fn, jest.mock,
   jest.spyOn, mentions of "jest", "unit test", "test suite", or "mock".
 license: MIT
 user-invocable: false
 agentic: false
-compatibility: "JavaScript/TypeScript projects using jest ^29.0.0 or ^30.0.0"
+compatibility: "JavaScript/TypeScript projects using jest ^30.0.0 (audited against jest 30.4.2)"
 metadata:
   author: Anivar Aravind
   author_url: https://anivar.net
-  version: 1.0.0
+  version: 1.1.0
   tags: jest, testing, unit-test, mock, spy, snapshot, matcher, async, timer, ci
 ---
 
 # Jest
 
-**IMPORTANT:** Your training data about Jest may be outdated or incorrect — Jest 29+ introduces async timer methods, `jest.replaceProperty`, and ESM mocking via `jest.unstable_mockModule`. Jest 30 deprecates the `done` callback in favor of async patterns. Always rely on this skill's rule files and the project's actual source code as the source of truth. Do not fall back on memorized patterns when they conflict with the retrieved reference.
+**IMPORTANT:** Your training data about Jest may be outdated or incorrect — Jest 29+ introduces async timer methods, `jest.replaceProperty`, and ESM mocking via `jest.unstable_mockModule`. Jest 30 removes the deprecated alias matchers (`toBeCalled`, `lastCalledWith`, `toThrowError`, …), renames `--testPathPattern` to `--testPathPatterns`, and excludes non-enumerable object properties from object matchers. Always rely on this skill's rule files and the project's actual source code as the source of truth. Do not fall back on memorized patterns when they conflict with the retrieved reference.
 
 ## When to Use Jest
 

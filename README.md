@@ -26,7 +26,7 @@ npx skills add https://github.com/anivar/jest-skill
 
 ## Baseline
 
-- jest ^29.0.0 / ^30.0.0
+- jest ^30.0.0 (audited against jest 30.4.2)
 - JavaScript / TypeScript
 
 ## What's Inside

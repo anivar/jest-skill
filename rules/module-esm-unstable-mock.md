@@ -11,6 +11,10 @@ tags: module, esm, unstable_mockModule, import, dynamic-import
 
 `jest.mock()` relies on CommonJS hoisting semantics. In native ES module mode (`"type": "module"` or `.mjs` files), `jest.mock()` cannot hoist above static `import` statements. The mock is registered after the module is already imported, so the real module is used instead.
 
+Hoisting order is not the only problem. Upstream: "`jest.mock` does *not* apply when the resolved file is ESM - `jest.mock` is for CJS targets." Since Node v24.9 Jest supports `require()`-ing an ES module from CJS code, so a `.cjs` test file *can* `require()` an `.mjs` module — CJS hoisting works fine there and `jest.mock` still will not mock it. The determining factor is the format of the resolved module, not the mode of the test file.
+
+In native ESM the `jest` object is also not a global: "To access this object in ESM, you need to import it from the `@jest/globals` module or use `import.meta`" — `jest === import.meta.jest`. `describe`/`test`/`expect` still arrive as globals, which is why only the `jest.*` calls fail with `ReferenceError: jest is not defined`.
+
 ## Incorrect
 
 ```javascript
@@ -28,6 +32,8 @@ test('mocks fetchUser', () => {
 
 ```javascript
 // Use jest.unstable_mockModule + dynamic import
+import { jest } from '@jest/globals'; // `jest` is not a global in ESM
+
 beforeEach(async () => {
   jest.unstable_mockModule('./api.mjs', () => ({
     fetchUser: jest.fn(),
@@ -42,20 +48,31 @@ test('mocks fetchUser', async () => {
 ```
 
 ```javascript
-// With partial mocking
+// With partial mocking — resolve the real namespace BEFORE registering the mock.
+// A factory that imports the module it is mocking re-enters itself; verified on
+// jest 30.4.1, that recursion crashes the worker with a heap out-of-memory error.
+import { jest } from '@jest/globals';
+
 test('partial ESM mock', async () => {
-  jest.unstable_mockModule('./utils.mjs', async () => {
-    const actual = await import('./utils.mjs');
-    return {
-      ...actual,
-      formatDate: jest.fn(() => '2024-01-01'),
-    };
-  });
+  const actual = await import('./utils.mjs');
+
+  jest.unstable_mockModule('./utils.mjs', () => ({
+    ...actual,
+    formatDate: jest.fn(() => '2024-01-01'),
+  }));
 
   const { formatDate, formatCurrency } = await import('./utils.mjs');
   expect(formatDate()).toBe('2024-01-01');
-  expect(typeof formatCurrency).toBe('function'); // real implementation
+  expect(formatCurrency(5)).toBe('$5'); // real implementation
 });
+```
+
+```javascript
+// Undo a mock: jest.unstable_unmockModule is the ESM counterpart to jest.unmock
+import { jest } from '@jest/globals';
+
+jest.unstable_unmockModule('./esm-module.js');
+const originalModule = await import('./esm-module.js');
 ```
 
 ## Key Differences from jest.mock
@@ -64,7 +81,9 @@ test('partial ESM mock', async () => {
 |---|---|---|
 | Hoisting | Auto-hoisted above imports | Not hoisted |
 | Import style | `require()` or static `import` | Must use `await import()` |
-| Factory | Synchronous | Can be `async` |
+| Factory | Synchronous | Required; can be sync or `async` |
+| Undo | `jest.unmock` | `jest.unstable_unmockModule` |
+| `jest` object | Injected global | Import from `@jest/globals` (or `import.meta.jest`) |
 | API stability | Stable | Unstable (API may change) |
 | Module resolution | After mock registration | After mock registration |
 
@@ -73,4 +92,4 @@ test('partial ESM mock', async () => {
 - ESM has static module linking — imports are resolved before any code runs, so hoisting is not possible.
 - `jest.unstable_mockModule` registers the mock first, then `await import()` resolves against the mock registry.
 - The `unstable_` prefix indicates the API may change in future Jest versions, but it is the official approach for ESM mocking.
-- If you're in a project that uses CJS (`require`), stick with `jest.mock()` — it's simpler and stable.
+- If the *target module* is CJS, stick with `jest.mock()` — it's simpler and stable. What matters is the resolved module's format, not whether your test file uses `require`.

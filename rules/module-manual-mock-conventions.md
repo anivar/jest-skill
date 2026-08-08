@@ -49,6 +49,9 @@ project-root/
 | **User module** (`./utils/helpers`) | `./utils/__mocks__/helpers.js` | No — must call `jest.mock('./utils/helpers')` |
 | **Node module** (`axios`) | `<rootDir>/__mocks__/axios.js` | Yes — auto-used without `jest.mock('axios')` |
 | **Scoped package** (`@scope/pkg`) | `__mocks__/@scope/pkg.js` | Yes — auto-used |
+| **Core Node module** (`fs`, `path`) | `<rootDir>/__mocks__/fs.js` | No — `jest.mock('fs')` is required; built-ins are not mocked by default |
+
+The two auto-used rows hold when `__mocks__` sits adjacent to `node_modules` — "unless you configured `roots` to point to a folder other than the project root".
 
 ## Manual Mock File Content
 
@@ -75,6 +78,6 @@ module.exports = helpers;
 
 ## Why
 
-- **Node module mocks auto-activate** because node_modules are external dependencies you almost always want to control in tests.
+- **Third-party node_modules mocks auto-activate** because they are external dependencies you almost always want to control in tests. This does not extend to Node's own built-ins: "If we want to mock Node's built-in modules (e.g.: `fs` or `path`), then explicitly calling e.g. `jest.mock('path')` is **required**, because built-in modules are not mocked by default."
 - **User module mocks require explicit `jest.mock()`** because you usually want the real implementation and only mock selectively.
 - `jest.createMockFromModule()` auto-generates mocks for all exports, which you can then override selectively. This is safer than writing the entire mock by hand because it stays in sync with the real module's export shape.

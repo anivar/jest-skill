@@ -74,14 +74,30 @@ test('uses different mock config', () => {
 });
 ```
 
+## Async callbacks: jest.isolateModulesAsync
+
+`jest.isolateModules` takes a **synchronous** callback. Hand it an async function and the sandbox
+registry is restored before the promise settles, so the `import()`/`require()` inside it runs
+against the shared registry — silently defeating the isolation this rule exists to provide.
+For ESM, or for any async work inside the sandbox, use `jest.isolateModulesAsync(fn)` and
+`await` it: "the caller is expected to `await` the completion of `isolateModulesAsync`."
+
+```javascript
+await jest.isolateModulesAsync(async () => {
+  const mod = await import('./counter');
+  // async work here
+});
+```
+
 ## jest.resetModules vs jest.isolateModules
 
-| Feature | `jest.resetModules()` | `jest.isolateModules(fn)` |
-|---|---|---|
-| Scope | Global — clears entire registry | Scoped — only affects `require` inside `fn` |
-| Side effects | May break `beforeAll` setup | Contained within callback |
-| Use with `doMock` | Yes | Yes |
-| Restores registry after | No — stays cleared | Yes — restores after callback |
+| Feature | `jest.resetModules()` | `jest.isolateModules(fn)` | `jest.isolateModulesAsync(fn)` |
+|---|---|---|---|
+| Scope | Global — clears entire registry | Scoped — only affects `require` inside `fn` | Scoped — same, for an async `fn` |
+| Side effects | May break `beforeAll` setup | Contained within callback | Contained within callback |
+| Use with `doMock` | Yes | Yes | Yes |
+| Restores registry after | No — stays cleared | Yes — restores after callback | Yes — restores after the awaited callback |
+| Async callback | N/A | No — restores before it settles | Yes — caller must `await` |
 
 ## Why
 

@@ -16,7 +16,7 @@ Jest's default `transformIgnorePatterns` skips `node_modules/`, meaning third-pa
 ```javascript
 // jest.config.js — default config
 module.exports = {
-  // transformIgnorePatterns defaults to ['/node_modules/']
+  // transformIgnorePatterns defaults to ['/node_modules/', '\\.pnp\\.[^\\/]+$']
   // ESM-only packages like `uuid`, `nanoid`, `chalk` v5 will fail:
   // SyntaxError: Cannot use import statement outside a module
 };
@@ -29,6 +29,7 @@ module.exports = {
 module.exports = {
   transformIgnorePatterns: [
     '/node_modules/(?!(uuid|nanoid|chalk|@esm-package)/)',
+    '\\.pnp\\.[^\\/]+$', // preserved from the default — excludes Yarn PnP files
   ],
 };
 ```
@@ -49,7 +50,7 @@ module.exports = {
 
 ## How It Works
 
-The `transformIgnorePatterns` array contains regex patterns. Files matching these patterns are **not** transformed. The default `['/node_modules/']` skips all of `node_modules/`.
+The `transformIgnorePatterns` array contains regex patterns. Files matching these patterns are **not** transformed. The default is `['/node_modules/', '\\.pnp\\.[^\\/]+$']` — it skips all of `node_modules/` **plus** Yarn PnP files. Setting the option replaces the whole array rather than merging, so an override that lists only the `node_modules` pattern silently drops the PnP exclusion.
 
 To transform specific packages, use a **negative lookahead**:
 

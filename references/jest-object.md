@@ -54,6 +54,18 @@ jest.isolateModules(() => {
 });
 ```
 
+### `jest.isolateModulesAsync(fn)`
+
+The equivalent of `jest.isolateModules()` for async callbacks — the caller is expected to
+`await` it. Use this whenever the callback does a dynamic `import()` or any other async work.
+
+```javascript
+await jest.isolateModulesAsync(async () => {
+  const mod = await import('./counter');
+  // async work here
+});
+```
+
 ### `jest.requireActual(moduleName)`
 
 Returns the real module, bypassing any mocks. Used inside `jest.mock` factories for partial mocking.
@@ -79,6 +91,25 @@ utils.format.mockReturnValue('formatted');
 module.exports = utils;
 ```
 
+### `jest.onGenerateMock(callback)`
+
+Registers a callback invoked whenever Jest auto-generates a module mock, so you can patch the
+generated mock centrally (typically from `setupFilesAfterEnv`) instead of repeating the same
+factory in every test file. Callbacks run in registration order, each receiving the previous
+callback's output as `moduleMock`.
+
+```javascript
+jest.onGenerateMock((modulePath, moduleMock) => {
+  if (modulePath.includes('Database')) {
+    moduleMock.connect = jest.fn();
+  }
+  return moduleMock;
+});
+```
+
+It is **not** called for manually created mocks — neither `__mocks__` files nor explicit
+`jest.mock('moduleName', () => { ... })` factories.
+
 ## ESM Mocking
 
 ### `jest.unstable_mockModule(moduleName, factory, options?)`
@@ -93,6 +124,19 @@ jest.unstable_mockModule('./api.mjs', () => ({
 const { fetchUser } = await import('./api.mjs');
 ```
 
+In ESM the `jest` object is not a global — `import { jest } from '@jest/globals'` (or use
+`import.meta.jest`).
+
+### `jest.unstable_unmockModule(moduleName)`
+
+The ESM counterpart to `jest.unmock` — undoes an `unstable_mockModule` (or an automock) so a
+subsequent dynamic `import()` resolves the real module.
+
+```javascript
+jest.unstable_unmockModule('./esm-module.js');
+const originalModule = await import('./esm-module.js');
+```
+
 ## Timer Mocking
 
 ### `jest.useFakeTimers(config?)`
@@ -102,9 +146,15 @@ Replaces timer globals with fakes.
 ```javascript
 jest.useFakeTimers();
 jest.useFakeTimers({ now: new Date('2024-01-01') }); // fixed Date.now
-jest.useFakeTimers({ doNotFake: ['Date', 'performance'] }); // selective
-jest.useFakeTimers({ timerLimit: 1000 }); // max timers before error
+jest.useFakeTimers({ doNotFake: ['Date', 'performance'] }); // selective (default: [])
+jest.useFakeTimers({ timerLimit: 1000 }); // max timers before error (default 100_000)
+jest.useFakeTimers({ advanceTimers: true }); // auto-advance 20ms every 20ms; pass a number for a custom delta (default false)
+jest.useFakeTimers({ legacyFakeTimers: true }); // pre-@sinonjs implementation (default false)
 ```
+
+The async timer methods, `jest.setSystemTime`, `jest.getRealSystemTime`,
+`jest.advanceTimersToNextFrame` and `jest.setTimerTickMode` are all documented as unavailable
+under legacy fake timers.
 
 ### `jest.useRealTimers()`
 
@@ -118,6 +168,7 @@ Restores real timer implementations.
 | `jest.runOnlyPendingTimers()` | Runs only currently pending timers |
 | `jest.advanceTimersByTime(ms)` | Advances clock by `ms`, firing timers along the way |
 | `jest.advanceTimersToNextTimer(steps?)` | Advances to the next timer (optionally repeat `steps` times) |
+| `jest.advanceTimersToNextFrame()` | Advances timers by just enough milliseconds to execute callbacks currently scheduled with `requestAnimationFrame` (animation frames run every 16ms of fake clock). Not available with legacy fake timers |
 
 ### Async Timer Methods (Jest 29.5+)
 
@@ -138,6 +189,20 @@ jest.now();                // current fake clock time (ms)
 jest.setSystemTime(date);  // set fake clock to specific time
 jest.getRealSystemTime();  // real Date.now() even when faked
 ```
+
+### `jest.setTimerTickMode(mode)`
+
+Configures how fake timers advance time, without tearing down and reinstalling them. Not
+available with legacy fake timers.
+
+```javascript
+jest.setTimerTickMode({ mode: 'manual' });               // default: only the tick APIs advance the clock
+jest.setTimerTickMode({ mode: 'nextAsync' });            // break the event loop, run the next timer, repeat
+jest.setTimerTickMode({ mode: 'interval', delta: 20 });  // same as `advanceTimers: true`; delta defaults to 20
+```
+
+Useful mid-test when the code under test awaits a timer: switch to `nextAsync`, `await`, then
+switch back to `manual`.
 
 ## Mock Cleanup
 
@@ -163,8 +228,15 @@ Retries failed tests up to `count` times. Useful for flaky integration tests.
 
 ```javascript
 jest.retryTimes(3);
-jest.retryTimes(3, { logErrorsBeforeRetry: true });
+jest.retryTimes(3, { logErrorsBeforeRetry: true }); // log the error that caused each failure
+jest.retryTimes(3, { waitBeforeRetry: 1000 });      // ms to wait before retrying
+jest.retryTimes(3, { retryImmediately: true });     // retry now instead of after the rest of the file
 ```
+
+Without `retryImmediately`, "the tests are retried after Jest is finished running all other
+tests in the file" — which matters when the flake is order- or state-dependent. Must be declared
+at the top level of a test file or in a `describe` block, and only works with the default
+`jest-circus` runner.
 
 ## Property Replacement
 

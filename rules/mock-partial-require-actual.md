@@ -9,7 +9,9 @@ tags: mock, requireActual, partial, jest.mock, spread
 
 ## Problem
 
-When you `jest.mock()` a module, all of its exports become `undefined` (auto-mock) or whatever the factory returns. If you only want to mock one function and keep the rest real, you must explicitly spread `jest.requireActual`. Forgetting this causes the real exports to be missing, leading to `TypeError: X is not a function`.
+When you `jest.mock()` a module **without a factory**, Jest auto-mocks it: the API surface is preserved ("All modules used in your tests will have a replacement implementation, keeping the API surface"), but every function export is replaced by a `jest.fn()` that returns `undefined`.
+
+When you pass a **factory**, the module's exports become exactly what the factory returns, so any export the factory omits is genuinely missing. In that case, if you only want to mock one function and keep the rest real, you must explicitly spread `jest.requireActual`. Forgetting this causes the real exports to be missing, leading to `TypeError: X is not a function`.
 
 ## Incorrect
 

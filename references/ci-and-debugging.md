@@ -83,6 +83,10 @@ npx jest --detectOpenHandles
 
 Warns about handles (timers, connections, listeners) that prevent Jest from exiting cleanly.
 
+Upstream: "This implies `--runInBand`, making tests run serially. Implemented using
+`async_hooks`. This option has a significant performance penalty and should only be used for
+debugging." Use it for local diagnosis, never as a standing CI flag.
+
 ### Force Exit
 
 ```bash
@@ -133,13 +137,18 @@ node --inspect-brk node_modules/.bin/jest --runInBand
   "args": [
     "--runInBand",
     "--no-cache",
-    "--testPathPattern",
+    "--testPathPatterns",
     "${relativeFile}",
     "--testNamePattern",
     "test name pattern"
   ]
 }
 ```
+
+Jest 29 and earlier use the singular `--testPathPattern`; Jest 30 renamed it to
+`--testPathPatterns`, which accepts multiple space-separated patterns and is command-line-only
+(not valid in a config file). The two spellings are mutually exclusive — passing the singular
+form to Jest 30 aborts the run. `--testNamePattern` was **not** renamed.
 
 ### console.log in Tests
 
@@ -210,6 +219,21 @@ Common causes:
 - Running HTTP servers
 - Uncleared intervals/timers
 - Unclosed event listeners
+
+Remember `--detectOpenHandles` implies `--runInBand`, so this command runs the whole suite
+serially.
+
+### Unhandled-rejection failures reported against the wrong test (or one you already caught)
+
+```bash
+npx jest --waitForUnhandledRejections
+```
+
+Config equivalent: `waitForUnhandledRejections: true`. It "gives one event loop turn to handle
+`rejectionHandled`, `uncaughtException` or `unhandledRejection`. Without this flag Jest may
+report false-positive errors (e.g. actually handled rejection reported) or not report actually
+unhandled rejection (or report it for different test case)." It "may add a noticeable overhead
+for fast test suites" — turn it on while diagnosing, not by default.
 
 ### Slow test startup
 

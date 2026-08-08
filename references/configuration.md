@@ -1,12 +1,42 @@
 # Configuration Reference
 
-Jest configuration can be defined in `jest.config.js`, `jest.config.ts`, `jest.config.mjs`, or in the `"jest"` key of `package.json`.
+Jest discovers configuration automatically from `jest.config.js|ts|mjs|mts|cjs|cts|json`, or from
+the `"jest"` key of `package.json`. Plain object exports still work everywhere in this reference;
+the `defineConfig` helper adds type-safety and editor autocompletion:
+
+```javascript
+const { defineConfig } = require('jest');
+
+module.exports = defineConfig({
+  // ... Specify options here.
+});
+```
+
+TypeScript config files use the same helper with an `import`; upstream loads them through a
+`/** @jest-config-loader ts-node */` (or `esbuild-register`) docblock.
+
+Layer a project config over a shared base with `mergeConfig` — relevant to the Projects
+(Monorepo) section below:
+
+```javascript
+const { defineConfig, mergeConfig } = require('jest');
+const jestConfig = require('./jest.config');
+
+module.exports = mergeConfig(
+  jestConfig,
+  defineConfig({
+    // ... Specify options here.
+  }),
+);
+```
 
 ## Test File Discovery
 
 ### `testMatch`
 
-Glob patterns for test files. Default matches `**/__tests__/**/*` and `**/*.{test,spec}.*`.
+Glob patterns for test files. Default:
+`["**/__tests__/**/*.?([mc])[jt]s?(x)", "**/?(*.)+(spec|test).?([mc])[jt]s?(x)"]` — Jest 30
+recognizes `.mjs`/`.cjs`/`.mts`/`.cts` as well as `.js`/`.jsx`/`.ts`/`.tsx`.
 
 ```javascript
 module.exports = {
@@ -29,13 +59,17 @@ module.exports = {
 
 ### `testRegex`
 
-Alternative to `testMatch` — uses regex instead of globs. Cannot use both.
+Alternative to `testMatch` — uses regex instead of globs. Cannot use both. The Jest 30 default
+is:
 
 ```javascript
 module.exports = {
-  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.[jt]sx?$',
+  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.[mc]?[jt]sx?$',
 };
 ```
+
+The pre-Jest-30 form omitted `[mc]?`; copying it silently stops `.mjs`/`.cjs` test files from
+being discovered.
 
 ## Transform
 
@@ -55,12 +89,15 @@ module.exports = {
 
 ### `transformIgnorePatterns`
 
-Patterns to skip transformation. Default: `['/node_modules/']`.
+Patterns to skip transformation. Default: `['/node_modules/', '\\.pnp\\.[^\\/]+$']` — the second
+entry excludes Yarn PnP files. Setting this option **replaces** the whole array, so carry the
+PnP entry over unless you know you do not need it.
 
 ```javascript
 module.exports = {
   transformIgnorePatterns: [
     '/node_modules/(?!(uuid|nanoid|chalk)/)', // transform ESM packages
+    '\\.pnp\\.[^\\/]+$',                       // keep the default PnP exclusion
   ],
 };
 ```
@@ -101,6 +138,11 @@ module.exports = {
 };
 ```
 
+### `moduleFileExtensions`
+
+Extensions to try, left to right, when a `require` omits one. Default:
+`["js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "json", "node"]`.
+
 ## Test Environment
 
 ### `testEnvironment`
@@ -125,9 +167,11 @@ Per-file override via docblock:
 
 ### `testEnvironmentOptions`
 
-Options passed to the environment.
+Options passed to the environment. Default: `{}`. The relevant options depend on which
+environment is in use.
 
 ```javascript
+// jsdom environment
 module.exports = {
   testEnvironmentOptions: {
     url: 'https://example.com',  // jsdom URL
@@ -135,6 +179,21 @@ module.exports = {
   },
 };
 ```
+
+```javascript
+// node environment — options are passed to `runInContext`
+module.exports = {
+  testEnvironmentOptions: {
+    globalsCleanup: 'on', // 'on' | 'soft' | 'off'
+  },
+};
+```
+
+Upstream on the node environment: "When using the `node` environment, you can configure various
+options that are passed to `runInContext`", including `globalsCleanup` (`'on' | 'soft' | 'off'`)
+— "Controls cleanup of global variables between tests. Default: `'soft'`" — plus every option
+`vm.runInContext` accepts. This is environment teardown, a different mechanism from the
+intra-file order dependence covered by `rules/structure-test-isolation.md`.
 
 ## Coverage
 
@@ -183,7 +242,9 @@ Output directory. Default: `'coverage'`.
 
 ### `coverageProvider`
 
-Coverage implementation. `'v8'` (faster, default in Jest 30) or `'babel'`.
+Coverage implementation. `'babel'` (default) or `'v8'` (faster, uses V8's built-in coverage, but
+different branch-coverage semantics and no `/* istanbul ignore */` support). `'babel'` is still
+the Jest 30 default — you must opt into v8 explicitly.
 
 ## Mock Configuration
 
@@ -236,7 +297,9 @@ module.exports = {
 
 ### `maxWorkers`
 
-Number of workers. Default: number of CPUs.
+Maximum number of workers the worker pool will spawn. Default: in single-run mode, the number of
+available cores **minus one** (reserved for the main thread); in watch mode, half of the
+available cores.
 
 ```javascript
 module.exports = {
@@ -300,11 +363,11 @@ module.exports = {
 
 ## Snapshot
 
+`snapshotFormat` defaults to `{escapeString: false, printBasicPrototype: false}`, so stored
+snapshots already print `{` rather than `Object {`. Set the key only to override something.
+
 ```javascript
 module.exports = {
-  snapshotFormat: {
-    printBasicPrototype: false, // cleaner snapshot output
-  },
   snapshotSerializers: ['enzyme-to-json/serializer'],
 };
 ```

@@ -44,11 +44,11 @@ test('creates user', () => {
     createdAt: expect.any(Date),
   });
 });
-// Stored snapshot:
-// Object {
+// Stored snapshot (keys are serialized in sorted order):
+// {
+//   "createdAt": Any<Date>,
 //   "id": Any<String>,
 //   "name": "Alice",
-//   "createdAt": Any<Date>,
 // }
 ```
 
@@ -59,9 +59,9 @@ expect(createUser({ name: 'Alice' })).toMatchInlineSnapshot(
   { id: expect.any(String), createdAt: expect.any(Date) },
   `
   {
+    "createdAt": Any<Date>,
     "id": Any<String>,
     "name": "Alice",
-    "createdAt": Any<Date>,
   }
   `
 );
@@ -74,8 +74,11 @@ expect(createUser({ name: 'Alice' })).toMatchInlineSnapshot(
 npx jest --updateSnapshot
 npx jest -u
 
-# Update snapshots for specific tests
-npx jest -u --testPathPattern='Button'
+# Update snapshots for specific test files
+npx jest -u --testPathPatterns='Button'
+
+# Or narrow by test name — the upstream-recommended way to limit what regenerates
+npx jest -u --testNamePattern='renders disabled'
 
 # In watch mode: press 'u' to update failed snapshots
 ```
@@ -86,6 +89,19 @@ npx jest -u --testPathPattern='Button'
 - File extension: `.snap`.
 - Should be committed to version control.
 - Review snapshot diffs carefully in PRs — they represent behavioral changes.
+
+### New snapshots in CI
+
+Run Jest with `--ci` in CI. Without it, a test whose stored snapshot is missing writes the new
+snapshot and passes — so a forgotten `.snap` commit produces a green build that asserts nothing.
+With `--ci`, "Instead of the regular behavior of storing a new snapshot automatically, it will
+fail the test and require Jest to be run with `--updateSnapshot`." Upstream: "as of Jest 20,
+snapshots in Jest are not automatically written when Jest is run in a CI system without
+explicitly passing `--updateSnapshot`."
+
+```bash
+npx jest --ci
+```
 
 ## Custom Serializers
 
@@ -122,12 +138,16 @@ expect.addSnapshotSerializer({
 
 ## Snapshot Format
 
+`snapshotFormat` defaults to `{escapeString: false, printBasicPrototype: false}`, so snapshots
+already print `{` rather than `Object {` without any configuration. Set a key only when you
+deliberately want to override the default — note that `escapeString: true` inverts it, changing
+how existing snapshots serialize.
+
 ```javascript
-// jest.config.js
+// jest.config.js — deliberate override, not a recommended default
 module.exports = {
   snapshotFormat: {
-    escapeString: true,
-    printBasicPrototype: false, // don't print "Object {" — just "{"
+    printBasicPrototype: true, // opt back in to the old "Object {" prefix
   },
 };
 ```
@@ -196,3 +216,7 @@ expect(response).toMatchSnapshot({
   },
 });
 ```
+
+For plain `toEqual` assertions on homogeneous arrays there is also `expect.arrayOf` (every
+element matches one matcher) — see `references/matchers.md`. Upstream documents it with
+`toEqual`, not as a snapshot property matcher.

@@ -49,9 +49,9 @@ test('creates user', () => {
     },
     `
     {
+      "createdAt": Any<Date>,
       "id": Any<String>,
       "name": "Alice",
-      "createdAt": Any<Date>,
     }
     `
   );
@@ -71,6 +71,12 @@ expect(result).toMatchSnapshot({
   ]),
 });
 ```
+
+Keys are serialized in sorted order, not source order — write the expected snapshot that way.
+
+`expect.arrayContaining` asserts the array *includes* the listed items. If you need "every
+element matches", that is `expect.arrayOf`, which upstream documents for `toEqual` assertions
+rather than as a snapshot property matcher. See `references/matchers.md`.
 
 ## Why
 
