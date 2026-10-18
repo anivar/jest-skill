@@ -2,7 +2,7 @@
 
 > This document is for AI agents and LLMs to follow when writing, reviewing, or debugging Jest tests. It compiles all rules and references into a single executable guide.
 
-**Baseline:** jest ^30.0.0 with JavaScript or TypeScript (audited against jest 30.4.2)
+**Baseline:** jest ^30.5.2 with JavaScript or TypeScript (audited against jest 30.5.2)
 
 ---
 

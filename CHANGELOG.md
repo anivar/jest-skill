@@ -101,3 +101,11 @@ rewritten to match observed behaviour: the `.rejects` failure mode, the fate of 
 ## 1.0.0
 
 Initial release: 28 rules, 9 references.
+
+## 1.2.0
+
+Baseline raised from `^30.0.0` to `^30.5.2` in `SKILL.md`, `AGENTS.md` and `README.md` (audited against jest 30.5.2); `metadata.version` is now 1.2.0.
+
+### Added
+
+A "Jest 30.4–30.5 Additions" section in `SKILL.md`: `mockFn.whenCalledWith()` for per-argument-list mock configuration with asymmetric-matcher support; describe-level retries via `jest.retryTimes(n, { entireDescribe: true })`; expanded `--collectTests` with per-status counts; nested `cause`/`AggregateError` code frames in retry and unhandled-rejection output; `defineConfig`/`mergeConfig`; `jest.config.mts`; Temporal duration/instant support in fake timers; Node-native TypeScript stripping for untransformed `.ts`/`.mts`/`.cts` files; and the widened `object` parameter type in `toMatchObject`/`objectContaining`.
