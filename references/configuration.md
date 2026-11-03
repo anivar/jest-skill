@@ -87,6 +87,9 @@ module.exports = {
 };
 ```
 
+When no transformer claims a `.ts`, `.mts` or `.cts` file, Jest 30.5.2 strips the TypeScript
+types with Node itself.
+
 ### `transformIgnorePatterns`
 
 Patterns to skip transformation. Default: `['/node_modules/', '\\.pnp\\.[^\\/]+$']` — the second
@@ -101,6 +104,10 @@ module.exports = {
   ],
 };
 ```
+
+The listed packages are then transformed only if the transformer compiles ESM to CommonJS — for
+`babel-jest`, a project-wide `babel.config.js` with `@babel/preset-env`. See
+`rules/config-transform-node-modules.md`.
 
 ## Module Resolution
 
@@ -151,9 +158,9 @@ The environment for all tests. Default: `'node'`.
 
 ```javascript
 module.exports = {
-  testEnvironment: 'node',   // Node.js globals
-  // or
-  testEnvironment: 'jsdom',  // Browser-like globals (window, document)
+  testEnvironment: 'node', // Node.js globals (the default)
+  // or, for browser-like globals (window, document):
+  // testEnvironment: 'jsdom',
 };
 ```
 
@@ -250,12 +257,17 @@ the Jest 30 default — you must opt into v8 explicitly.
 
 ```javascript
 module.exports = {
-  clearMocks: true,    // jest.clearAllMocks() after each test
-  resetMocks: true,    // jest.resetAllMocks() after each test
-  restoreMocks: true,  // jest.restoreAllMocks() after each test (recommended)
-  automock: false,      // auto-mock all imports (default: false)
+  clearMocks: true,    // jest.clearAllMocks() before each test
+  restoreMocks: true,  // jest.restoreAllMocks() before each test
+  // resetMocks: true, // jest.resetAllMocks() before each test
+  automock: false,     // auto-mock all imports (default: false)
 };
 ```
+
+Set `clearMocks` together with `restoreMocks` (recommended). `restoreMocks` restores spies and
+replaced properties but keeps call history, so calls from one test show up in the next.
+`resetMocks` also removes the implementations of `jest.mock` factory mocks: after it, a factory's
+`jest.fn(() => 'value')` returns `undefined` in every test.
 
 ## Setup Files
 
@@ -309,7 +321,21 @@ module.exports = {
 
 ### `verbose`
 
-Display individual test results. Default: `false`.
+Display individual test results. Default: `false`, or `true` when only one test file runs.
+Since Jest 30.4, `verbose` and `silent` can also be set in a `projects` entry; the project value
+overrides the global value for that project's tests.
+
+### `workerGracefulExitTimeout`
+
+Milliseconds a worker process gets to exit after all tests have completed, before it is
+force-killed. Default: `500` (Jest 30.4+). Increase it when the test environment needs more time
+to tear down.
+
+```javascript
+module.exports = {
+  workerGracefulExitTimeout: 2000,
+};
+```
 
 ### `bail`
 
@@ -356,6 +382,7 @@ module.exports = {
       displayName: 'integration',
       testMatch: ['<rootDir>/tests/**/*.integration.ts'],
       testTimeout: 30000,
+      silent: true, // per-project verbose/silent: Jest 30.4+
     },
   ],
 };

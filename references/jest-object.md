@@ -231,7 +231,13 @@ jest.retryTimes(3);
 jest.retryTimes(3, { logErrorsBeforeRetry: true }); // log the error that caused each failure
 jest.retryTimes(3, { waitBeforeRetry: 1000 });      // ms to wait before retrying
 jest.retryTimes(3, { retryImmediately: true });     // retry now instead of after the rest of the file
+jest.retryTimes(3, { entireDescribe: true });       // Jest 30.5+: retry the whole describe block
 ```
+
+With `entireDescribe`, a failure retries every test and hook in the `describe` block where
+`jest.retryTimes()` is called, including `beforeAll` and the tests that passed. At the top level
+it retries the root block of the file. Per-test retries do not apply inside a block that is
+being retried.
 
 Without `retryImmediately`, "the tests are retried after Jest is finished running all other
 tests in the file" — which matters when the flake is order- or state-dependent. Must be declared

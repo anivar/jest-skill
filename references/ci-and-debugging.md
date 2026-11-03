@@ -97,6 +97,22 @@ Forcefully exits after tests complete. Use as a last resort — `--detectOpenHan
 
 ## Debugging
 
+### List tests without running them
+
+`--collectTests` loads each test file and prints the suites and test names without running any
+test or hook. It expands `test.each` and `describe.each` to one entry per case, marks skipped and
+todo tests, and its counts match a run in which every selected test passes, also under
+`--testNamePattern`. Add `--json` for machine-readable output.
+
+```bash
+npx jest --collectTests
+```
+
+### Retry and unhandled-rejection output
+
+Since Jest 30.5, the retry log and unhandled-rejection reports print nested `cause` chains and
+the inner errors of an `AggregateError` with code frames.
+
 ### Node Inspector
 
 ```bash
@@ -199,7 +215,7 @@ transformIgnorePatterns: ['/node_modules/(?!(esm-package)/)']
 
 - Shared mutable state between tests.
 - Missing mock restoration.
-- Fix: use `beforeEach` to reset state, `restoreMocks: true` in config.
+- Fix: use `beforeEach` to reset state, `clearMocks: true` and `restoreMocks: true` in config.
 
 ### Tests pass locally but fail in CI
 
@@ -265,6 +281,21 @@ npx jest --watchAll       # re-run on any file change
 ```
 
 ## Reporters
+
+### Inside an AI agent
+
+Since Jest 30.3, Jest checks for agent environment variables (`AI_AGENT`, `CLAUDECODE`,
+`CLAUDE_CODE`, `CURSOR_AGENT`, `CODEX_SANDBOX`, `GEMINI_CLI`, `OPENCODE` and others). When one is
+set and the config has no `reporters`, it uses an agent reporter that prints only the files with
+failures, with their console output, and the summary. Passing files and their `console.log` output
+are not printed. Pass `--reporters=default`, or set `reporters` in the config, to get the full
+output. Measured on Jest 30.5.2.
+
+```bash
+npx jest --reporters=default
+```
+
+### Configured reporters
 
 ```javascript
 // jest.config.js

@@ -18,13 +18,14 @@ In native ESM the `jest` object is also not a global: "To access this object in 
 ## Incorrect
 
 ```javascript
-// BUG: jest.mock does not work with static ESM imports
+// BUG: jest.mock does not apply to an ES module
+import { jest } from '@jest/globals';
 import { fetchUser } from './api.mjs';
 
-jest.mock('./api.mjs'); // too late — import already resolved
+jest.mock('./api.mjs'); // too late, and jest.mock is for CJS targets
 
 test('mocks fetchUser', () => {
-  fetchUser.mockReturnValue({ id: 1 }); // TypeError: mockReturnValue is not a function
+  fetchUser.mockReturnValue({ id: 1 }); // TypeError: fetchUser.mockReturnValue is not a function
 });
 ```
 
@@ -74,6 +75,23 @@ import { jest } from '@jest/globals';
 jest.unstable_unmockModule('./esm-module.js');
 const originalModule = await import('./esm-module.js');
 ```
+
+## Automocking ES modules on Node 24.9+
+
+On Node 24.9 and later, Jest applies automocking and manual `__mocks__` files to ES modules. With `automock: true` in the config, a static `import` and a dynamic `import()` of an ES module get an automock generated from the real module's exports, and a sibling `__mocks__` file replaces the automock. Upstream says the same holds for `require()` of an ES module.
+
+```javascript
+// Config: { "automock": true }. Node 24.9+ only.
+import { jest } from '@jest/globals';
+import { fetchUser } from './api.mjs'; // automock: every export is a jest.fn
+
+test('automocked ESM export', () => {
+  expect(jest.isMockFunction(fetchUser)).toBe(true);
+  expect(fetchUser()).toBeUndefined();
+});
+```
+
+This covers module graphs that evaluate synchronously. A graph with top-level `await`, or a project whose resolver or transformer is async-only, still needs `jest.unstable_mockModule`. On Node 22 the same test fails with `Attempting to import a mock without a factory`. Without `automock`, `jest.mock('./api.mjs')` still does not mock the module, even when `__mocks__/api.mjs` exists.
 
 ## Key Differences from jest.mock
 

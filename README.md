@@ -100,8 +100,7 @@ This Jest skill covers Jest's own API surface — the foundation layer. For fram
 
 | Need | Skill | Install |
 |------|-------|---------|
-| **API mocking** (network-level) | [msw-skill](https://github.com/anivar/msw-skill) — MSW 2.0 handlers, server lifecycle, per-test overrides | `npx skills add anivar/msw-skill -g` |
-| **React Native components** | [react-native-testing](https://github.com/anivar/react-native-testing) — RNTL v13/v14 queries, userEvent, async render | `npx skills add anivar/react-native-testing -g` |
+| **API mocking** (network-level) | [msw-skill](https://github.com/anivar/msw-skill) — MSW 3 handlers, server lifecycle, per-test overrides | `npx skills add anivar/msw-skill -g` |
 | **Zod schema validation** | [zod-testing](https://github.com/anivar/zod-testing) — safeParse testing, mock data, property-based testing | `npx skills add anivar/zod-testing -g` |
 | **Redux-Saga side effects** | [redux-saga-testing](https://github.com/anivar/redux-saga-testing) — expectSaga, testSaga, providers | `npx skills add anivar/redux-saga-testing -g` |
 
@@ -111,7 +110,7 @@ This Jest skill covers Jest's own API surface — the foundation layer. For fram
 |-------|---------------|---------|
 | [zod-skill](https://github.com/anivar/zod-skill) | Zod v4 schema validation, parsing, error handling, type inference | `npx skills add anivar/zod-skill -g` |
 | [redux-saga-skill](https://github.com/anivar/redux-saga-skill) | Redux-Saga effects, fork model, channels, RTK integration | `npx skills add anivar/redux-saga-skill -g` |
-| [msw-skill](https://github.com/anivar/msw-skill) | MSW 2.0 API mocking — handlers, responses, GraphQL, v1→v2 migration | `npx skills add anivar/msw-skill -g` |
+| [msw-skill](https://github.com/anivar/msw-skill) | MSW 3 API mocking — handlers, responses, GraphQL, v1→v2 and v2→v3 migration | `npx skills add anivar/msw-skill -g` |
 
 ### Engineering Analysis Skills
 

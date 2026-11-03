@@ -9,11 +9,11 @@ description: >
 license: MIT
 user-invocable: false
 agentic: false
-compatibility: "JavaScript/TypeScript projects using jest ^30.0.0 (audited against jest 30.5.2)"
+compatibility: "JavaScript/TypeScript projects using jest ^30.5.2 (audited against jest 30.5.2)"
 metadata:
   author: Anivar Aravind
   author_url: https://anivar.net
-  version: 1.2.0
+  version: 1.2.1
   tags: jest, testing, unit-test, mock, spy, snapshot, matcher, async, timer, ci
 ---
 
@@ -53,7 +53,7 @@ Jest is a JavaScript/TypeScript testing framework for unit tests, integration te
 ### 1. Mock Design (CRITICAL)
 
 - `mock-clear-vs-reset-vs-restore` — clearAllMocks vs resetAllMocks vs restoreAllMocks
-- `mock-spy-restore` — Always restore jest.spyOn; prefer restoreMocks config
+- `mock-spy-restore` — Always restore jest.spyOn; prefer clearMocks + restoreMocks config
 - `mock-factory-hoisting` — jest.mock factory cannot reference outer variables
 - `mock-partial-require-actual` — Use jest.requireActual for partial module mocking
 - `mock-what-to-mock` — What to mock and what not to mock; mock boundaries
@@ -119,7 +119,7 @@ Jest is a JavaScript/TypeScript testing framework for unit tests, integration te
 | `jest.mock(module, factory?)` | Mock a module |
 | `jest.useFakeTimers(config?)` | Fake timer APIs |
 | `jest.useRealTimers()` | Restore real timers |
-| `jest.restoreAllMocks()` | Restore all spies/mocks |
+| `jest.restoreAllMocks()` | Restore spies and replaced properties (does not clear calls) |
 | `jest.resetModules()` | Clear module cache |
 | `jest.isolateModules(fn)` | Sandboxed module cache |
 | `jest.requireActual(module)` | Import real module (bypass mock) |
@@ -160,11 +160,9 @@ This Jest skill covers **Jest's own API surface** — the foundation layer. For 
 
 | Testing need | Companion skill | What it covers |
 |---|---|---|
-| API mocking (network-level) | **msw** | MSW 2.0 handlers, `setupServer`, `server.use()` per-test overrides, `HttpResponse.json()`, GraphQL mocking, concurrent test isolation |
-| React Native components | **react-native-testing** | RNTL v13/v14 queries (`getByRole`, `findBy`), `userEvent`, `fireEvent`, `waitFor`, async render patterns |
+| API mocking (network-level) | **msw** | MSW 3 handlers, `setupServer`, `server.use()` per-test overrides, `HttpResponse.json()`, GraphQL mocking, concurrent test isolation |
 | Zod schema validation | **zod-testing** | `safeParse()` result testing, `z.flattenError()` assertions, `z.toJSONSchema()` snapshot drift, `zod-schema-faker` mock data, property-based testing |
 | Redux-Saga side effects | **redux-saga-testing** | `expectSaga` integration tests, `testSaga` unit tests, providers, reducer integration, cancellation testing |
-| Java testing | **java-testing** | JUnit 5, Mockito, Spring Boot Test slices, Testcontainers, AssertJ |
 
 ### How They Interact
 
@@ -173,8 +171,6 @@ This Jest skill covers **Jest's own API surface** — the foundation layer. For 
 │              Your Test File                 │
 │                                             │
 │  import { setupServer } from 'msw/node'     │  → msw skill
-│  import { render } from '@testing-library/  │  → react-native-testing skill
-│            react-native'                    │
 │  import { UserSchema } from './schemas'     │  → zod-testing skill
 │                                             │
 │  describe('UserScreen', () => {             │  ┐
@@ -192,15 +188,3 @@ The Jest skill provides the **test lifecycle** (describe, test, beforeEach, afte
 ## Full Compiled Document
 
 For the complete guide with all rules expanded: `AGENTS.md`
-
-## Jest 30.4–30.5 Additions
-
-- **`mockFn.whenCalledWith(...args)`** (30.5.0) — configure a mock's return value per argument list, with first-class asymmetric-matcher support. Use it when one mock needs different results for different calls instead of separate `mockReturnValueOnce` chains.
-- **Describe-level retries** (30.5.0) — `jest.retryTimes(n, { entireDescribe: true })` retries the whole describe block, not just individual tests. Complements the existing per-test `jest.retryTimes`.
-- **`--collectTests` expansion** (30.5.0) — expands `test.each`/`describe.each` cases and reports per-status counts (including `wouldRun` for skipped tests) plus a summary line matching a real run, also under `--testNamePattern` and focused describes.
-- **Richer retry error output** (30.5.0) — nested `cause` and `AggregateError` sections render with code frames in retry logs and unhandled-rejection reports.
-- **`defineConfig` / `mergeConfig` helpers** (30.3.0) — type-safe Jest config construction.
-- **`jest.config.mts`** (30.4.0) — accepted as a valid configuration file, alongside the other TS config forms.
-- **Temporal in fake timers** (30.4.0) — `jest.advanceTimersByTime()` accepts `Temporal.Duration`; `jest.setSystemTime()` and `useFakeTimers({ now })` accept `Temporal.Instant` and `Temporal.ZonedDateTime`; `Temporal.Now.*` can be faked.
-- **Node-native type stripping** (30.5.2) — when no transformer claims a `.ts`, `.mts` or `.cts` file, Jest now strips TypeScript types with Node itself.
-- **`toMatchObject` / `objectContaining` widened** (30.5.0) — parameter type is `object` instead of `Record<string, unknown>`, so class instances are accepted.

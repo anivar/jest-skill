@@ -58,10 +58,12 @@ afterEach(() => {
 | Function | Clears calls | Removes implementation | Restores original |
 |---|---|---|---|
 | `clearAllMocks` | Yes | No | No |
-| `resetAllMocks` | Yes | Yes (→ `jest.fn()`) | No |
-| `restoreAllMocks` | Yes | Yes | Yes — `spyOn` / `replaceProperty` only |
+| `resetAllMocks` | Yes | Yes — every mock then returns `undefined` | No |
+| `restoreAllMocks` | No | No | Yes — `spyOn` / `replaceProperty` only |
 
-Prefer `restoreMocks: true` in `jest.config.js` as the safest default. It covers `jest.spyOn` and `jest.replaceProperty` only — a method you overwrote by hand with `jest.fn()` is never restored, so use `jest.spyOn` instead of manual assignment.
+`restoreAllMocks` does not clear call history: a restored spy keeps its calls, and a plain `jest.fn` keeps its calls and implementation. A single mock's `mockRestore()` clears, resets and restores.
+
+Prefer `clearMocks: true` with `restoreMocks: true` in `jest.config.js` as the safest default; `restoreMocks` alone lets call history carry into the next test. `restoreMocks` covers `jest.spyOn` and `jest.replaceProperty` only — a method you overwrote by hand with `jest.fn()` is never restored, so use `jest.spyOn` instead of manual assignment.
 
 ### Rule: Always Restore jest.spyOn
 
@@ -78,9 +80,10 @@ test('suppresses errors', () => {
 
 // CORRECT
 afterEach(() => jest.restoreAllMocks());
-// or: jest.config.js → { restoreMocks: true }
+// or: jest.config.js → { clearMocks: true, restoreMocks: true }
 
-// CORRECT (scope-bound) — needs explicit-resource-management transpilation
+// CORRECT (scope-bound) — the runtime must support `using`: Node 24.22.1 and 26 run it with the
+// default babel-jest; Node 22 fails with a SyntaxError (lower it with TypeScript >= 5.2 or Babel there)
 test('logs a warning', () => {
   using spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
   console.warn('watch out');
@@ -92,14 +95,19 @@ test('logs a warning', () => {
 
 Calls to `jest.mock()` are hoisted above all imports, so a variable cannot be
 defined first and then used in the factory. Jest makes an exception for names
-beginning with `mock`.
+matching `/^mock/i` (so `mocked` passes too), and for a `const` with a pure
+initializer, which it moves up with the mock. A variable set by a function call
+is rejected when the file is transformed.
 
 ```javascript
-// INCORRECT — `fakeUser` does not begin with `mock`
-const fakeUser = { id: 1, name: 'Alice' };
+// INCORRECT — `fakeUser` does not begin with `mock` and is set by a call
+const { buildUser } = require('./factories');
+const fakeUser = buildUser({ name: 'Alice' });
 jest.mock('./userService', () => ({
   getUser: jest.fn(() => fakeUser),
 }));
+// ReferenceError: The module factory of `jest.mock()` is not allowed to
+// reference any out-of-scope variables.
 
 // CORRECT — inline the value
 jest.mock('./userService', () => ({
@@ -177,13 +185,13 @@ test('creates user with validation', async () => {
 
 ### Rule: Always Return/Await Promises
 
-If an async test does not `await` or `return` its promise, Jest considers it synchronous. Assertions inside `.then()` never run — the test passes with zero assertions.
+If an async test does not `await` or `return` its promise, Jest considers it synchronous. An assertion inside `.then()` does not run inside the test: the test passes with zero assertions, or, when the promise was already resolved, a failing assertion becomes an uncaught error that takes down the run.
 
 ```javascript
 // INCORRECT — missing await
 test('fetches user', () => {
   fetchUser(1).then(user => {
-    expect(user.name).toBe('Alice'); // NEVER EXECUTES
+    expect(user.name).toBe('Alice'); // does not run inside the test
   });
 });
 
@@ -231,10 +239,10 @@ test('handles error', async () => {
 
 ### Rule: Wrap expect in try/catch When Using done Callback
 
-A failing `expect` throws, preventing `done()` from being called. The test times out instead of showing the real error.
+A failing `expect` throws, preventing `done()` from being called. The test waits out the full timeout (5 s by default); then Jest reports the assertion error and a second, timeout failure.
 
 ```javascript
-// INCORRECT — timeout instead of assertion error
+// INCORRECT — fails only after the 5 s timeout
 test('callback test', (done) => {
   fetchUser(1, (err, user) => {
     expect(user.name).toBe('Alice');
@@ -314,13 +322,13 @@ await expect(fetchUser(null)).rejects.toThrow('Invalid');
 
 ### Rule: Use runOnlyPendingTimers for Recursive Timers
 
-`jest.runAllTimers()` enters an infinite loop when timer callbacks schedule new timers.
+`jest.runAllTimers()` throws `Aborting after running 100000 timers, assuming an infinite loop!` when timer callbacks schedule new timers.
 
 ```javascript
-// INCORRECT — infinite loop
+// INCORRECT — a timer callback that schedules a new timer
 jest.useFakeTimers();
-startPolling();
-jest.runAllTimers(); // hangs
+startTicker();
+jest.runAllTimers(); // throws after 100000 timers
 
 // CORRECT
 jest.runOnlyPendingTimers(); // one cycle at a time
@@ -349,11 +357,11 @@ await jest.runOnlyPendingTimersAsync();
 ### Rule: Use doNotFake to Leave Specific APIs Real
 
 ```javascript
-// INCORRECT — Date is faked, uuid library returns same ID
+// INCORRECT — performance is faked, so timing real I/O reads 0 ms
 jest.useFakeTimers();
 
 // CORRECT
-jest.useFakeTimers({ doNotFake: ['Date', 'performance'] });
+jest.useFakeTimers({ doNotFake: ['performance'] });
 // `doNotFake` accepts 16 values, including nextTick, hrtime, requestAnimationFrame,
 // cancelAnimationFrame, requestIdleCallback, cancelIdleCallback and Temporal —
 // see rules/timer-selective-faking.md for the full list.
@@ -398,7 +406,7 @@ test('adds more', () => { items.push('b'); expect(items).toHaveLength(1); });
 
 ### Rule: Tests Must Be Defined Synchronously
 
-Jest discovers tests by running the file synchronously. Tests inside async callbacks are never registered.
+Jest discovers tests by running the file synchronously. Tests inside async callbacks never run, and the file fails with "Your test suite must contain at least one test." or, when it also has a synchronous test, "Cannot add a test after tests have started running. Tests must be defined synchronously."
 
 ```javascript
 // INCORRECT — tests never run
@@ -410,7 +418,7 @@ Jest discovers tests by running the file synchronously. Tests inside async callb
 // CORRECT — use test.each with synchronous data
 const cases = require('./cases.json');
 test.each(cases)('$name', ({ input, expected }) => {
-  expect(process(input)).toBe(expected);
+  expect(transform(input)).toBe(expected);
 });
 ```
 
@@ -430,7 +438,7 @@ test.each(cases)('$name', ({ input, expected }) => {
 
 ### Rule: Use jest.unstable_mockModule for ESM
 
-`jest.mock` "does *not* apply when the resolved file is ESM - `jest.mock` is for CJS targets". For native ESM, use `jest.unstable_mockModule` + dynamic `import()`, and import the `jest` object explicitly — it is not a global in ESM.
+`jest.mock` "does *not* apply when the resolved file is ESM - `jest.mock` is for CJS targets". For native ESM, use `jest.unstable_mockModule` + dynamic `import()`, and import the `jest` object explicitly — it is not a global in ESM. On Node 24.9+, `automock: true` also generates automocks for ES modules (static `import` and `import()`), and a sibling `__mocks__` file replaces the automock; on Node 22 that fails with `Attempting to import a mock without a factory`. A graph with top-level `await` still needs `jest.unstable_mockModule`.
 
 ```javascript
 import { jest } from '@jest/globals'; // or import.meta.jest — same object
@@ -530,7 +538,7 @@ module.exports = {
 
 ### Rule: Configure transformIgnorePatterns for ESM Packages
 
-The default `['/node_modules/', '\\.pnp\\.[^\\/]+$']` skips `node_modules/` and Yarn PnP files. ESM-only packages need a negative lookahead, and overriding replaces the whole array — carry the PnP entry over.
+The default `['/node_modules/', '\\.pnp\\.[^\\/]+$']` skips `node_modules/` and Yarn PnP files. A CJS test that `require()`s an ESM-only package (uuid v12+) fails with `Must use import to load ES Module`. Add a negative lookahead, and overriding replaces the whole array — carry the PnP entry over. The pattern alone is not enough: a project-wide `babel.config.js` must compile ESM to CommonJS (`@babel/preset-env`); the default `babel-jest` and a `.babelrc` do not. On Node.js 24.9+, `NODE_OPTIONS=--experimental-vm-modules` lets Jest `require()` the ES module with no transform.
 
 ```javascript
 module.exports = {
@@ -571,6 +579,14 @@ npx jest --maxWorkers=50%         # scales with container
 npx jest --shard=1/4              # split across CI jobs
 ```
 
+### Rule: Jest Quiets Its Output Inside an AI Agent
+
+Since Jest 30.3, when an agent environment variable such as `AI_AGENT`, `CLAUDECODE`, `CURSOR_AGENT` or `GEMINI_CLI` is set and the config has no `reporters`, Jest uses an agent reporter: it prints only the files with failures (with their console output) and the summary. Passing files and their `console.log` output do not appear. To see them, pass `--reporters=default` or set `reporters` in the config.
+
+```bash
+npx jest --reporters=default   # full per-file output inside an agent shell
+```
+
 ### Rule: jest.isolateModules for Per-Test Module State
 
 `jest.isolateModules` creates a sandboxed module registry without affecting other tests.
@@ -598,8 +614,8 @@ await jest.isolateModulesAsync(async () => {
 ## Quick Reference: Mock Cleanup
 
 ```javascript
-// jest.config.js (recommended)
-module.exports = { restoreMocks: true };
+// jest.config.js (recommended): restoreMocks alone keeps call history
+module.exports = { clearMocks: true, restoreMocks: true };
 
 // Manual
 afterEach(() => jest.restoreAllMocks());

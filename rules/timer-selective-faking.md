@@ -9,28 +9,34 @@ tags: timer, useFakeTimers, doNotFake, Date, performance, selective
 
 ## Problem
 
-`jest.useFakeTimers()` replaces all timer-related globals by default (`doNotFake` defaults to `[]`), including `setTimeout`, `setInterval`, `setImmediate`, `clearTimeout`, `clearInterval`, `clearImmediate`, `Date`, `performance`, and `queueMicrotask` — see the full list below. This can break libraries that rely on real `Date.now()` or `performance.now()` for non-timer purposes (e.g., logging, UUID generation, cache TTL calculations).
+`jest.useFakeTimers()` replaces all timer-related globals by default (`doNotFake` defaults to `[]`), including `setTimeout`, `setInterval`, `setImmediate`, `clearTimeout`, `clearInterval`, `clearImmediate`, `Date`, `performance`, and `queueMicrotask` — see the full list below. This can break libraries that rely on real `Date.now()` or `performance.now()` for non-timer purposes (e.g., logging, timing real I/O, cache TTL calculations).
 
 ## Incorrect
 
 ```javascript
-// BUG: Date is faked — uuid library that uses Date.now() returns the same ID every time
-test('creates unique records', () => {
+// BUG: performance is faked — the clock does not move while real I/O runs
+const { readFile } = require('node:fs/promises');
+
+async function timedRead(file) {
+  const start = performance.now();
+  const text = await readFile(file, 'utf8');
+  return { text, ms: performance.now() - start };
+}
+
+test('reports how long the read took', async () => {
   jest.useFakeTimers();
-  const a = createRecord(); // uses uuid internally
-  const b = createRecord();
-  expect(a.id).not.toBe(b.id); // FAILS — Date.now() is frozen
+  const { ms } = await timedRead(__filename);
+  expect(ms).toBeGreaterThan(0); // FAILS — ms is 0
 });
 ```
 
 ## Correct
 
 ```javascript
-test('creates unique records', () => {
-  jest.useFakeTimers({ doNotFake: ['Date'] });
-  const a = createRecord();
-  const b = createRecord();
-  expect(a.id).not.toBe(b.id); // PASSES — Date is real
+test('reports how long the read took', async () => {
+  jest.useFakeTimers({ doNotFake: ['performance'] });
+  const { ms } = await timedRead(__filename);
+  expect(ms).toBeGreaterThan(0); // PASSES — performance.now() is real
 });
 ```
 
@@ -57,7 +63,7 @@ Every value `doNotFake` accepts — this is the whole `FakeableAPI` union:
 | `clearTimeout` | Yes | Rarely |
 | `clearInterval` | Yes | Rarely |
 | `clearImmediate` | Yes | Rarely |
-| `Date` | Yes | UUID generation, logging, cache TTL |
+| `Date` | Yes | Logging, timing real I/O, cache TTL |
 | `performance` | Yes | Benchmarking, metrics libraries |
 | `queueMicrotask` | Yes | Promise-based code, React rendering |
 | `hrtime` | Yes — node env (`process.hrtime`) | Benchmarking |
@@ -90,3 +96,5 @@ You can also set a fixed fake time for `Date`:
 jest.useFakeTimers({ now: new Date('2024-01-01T00:00:00Z') });
 expect(Date.now()).toBe(1704067200000); // frozen at Jan 1, 2024
 ```
+
+Since Jest 30.4, `useFakeTimers({ now })` and `jest.setSystemTime()` also accept a `Temporal.Instant` or `Temporal.ZonedDateTime`, and `jest.advanceTimersByTime()` accepts a `Temporal.Duration`.

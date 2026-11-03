@@ -91,6 +91,9 @@ expect(obj).toHaveProperty(['nested', 'key']);
 expect(obj).toMatchObject({ subset: 'value' }); // partial match
 ```
 
+Since Jest 30.5, `toMatchObject` and `expect.objectContaining` take any `object`, so a class
+instance can be the expected value.
+
 ## Error Matchers
 
 ```javascript

@@ -69,6 +69,20 @@ await expect(mock()).rejects.toThrow('fail');
 mock.mockResolvedValueOnce('first').mockRejectedValueOnce(new Error('second'));
 ```
 
+`mockFn.whenCalledWith(...args)` (Jest 30.5+) gives one mock a different result per argument list,
+without branching inside `mockImplementation`. Each argument slot takes a literal or an
+asymmetric matcher; a call that matches no list falls through to the base mock:
+
+```javascript
+const color = jest.fn();
+color.whenCalledWith('apple').mockReturnValue('red');
+color.whenCalledWith(expect.any(Number)).mockReturnValue('number');
+
+color('apple'); // 'red'
+color(7);       // 'number'
+color('grape'); // undefined
+```
+
 ## Mock Implementations
 
 ```javascript
@@ -126,14 +140,15 @@ Ctor.mock.instances[1] === b; // true
 |---|---|---|---|
 | `mockClear()` | `mock.mockClear()` | `clearMocks: true` | Clears `mock.calls`, `mock.instances`, `mock.contexts`, `mock.results` |
 | `mockReset()` | `mock.mockReset()` | `resetMocks: true` | `mockClear()` + removes implementation (returns `undefined`) |
-| `mockRestore()` | `mock.mockRestore()` | `restoreMocks: true` | `mockReset()` + restores original implementation (spyOn only) |
+| `mockRestore()` | `mock.mockRestore()` | — | `mockReset()` + restores original implementation (spyOn only) |
+| `jest.restoreAllMocks()` | — | `restoreMocks: true` | Restores spies and replaced properties only. Does not clear calls or remove other mocks' implementations |
 
 `mockFn.mockClear()` replaces `mockFn.mock` rather than resetting its properties, so never
 assign `mockFn.mock` to another variable — you will read stale data after a clear.
 
 ```javascript
-// Config-level (recommended)
-module.exports = { restoreMocks: true };
+// Config-level (recommended): restoreMocks does not clear calls, so add clearMocks
+module.exports = { clearMocks: true, restoreMocks: true };
 
 // Manual
 afterEach(() => {
@@ -188,7 +203,7 @@ replaced.restore(); // or use restoreMocks config
 ## TypeScript Helpers
 
 ```typescript
-import { jest, type Mocked } from '@jest/globals';
+import { jest } from '@jest/globals'; // the Mocked type is jest.Mocked, not a named export
 
 // Type a mocked module
 jest.mock('./api');

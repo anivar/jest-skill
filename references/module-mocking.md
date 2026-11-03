@@ -105,7 +105,9 @@ filesystem.
 Not hoisted above imports — use for per-test mocking.
 
 ```javascript
-beforeEach(() => jest.resetModules());
+beforeEach(() => {
+  jest.resetModules();
+});
 
 test('test config', () => {
   jest.doMock('./config', () => ({ env: 'test' }));

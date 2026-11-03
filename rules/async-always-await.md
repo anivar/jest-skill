@@ -9,7 +9,7 @@ tags: async, await, promise, return, false-positive
 
 ## Problem
 
-If a test calls an async function but does not `await` or `return` the promise, Jest considers the test synchronous. The test finishes before the promise resolves, so any `expect` inside the `.then()` or after the `await` never runs. The test passes with zero assertions — a silent false positive.
+If a test calls an async function but does not `await` or `return` the promise, Jest considers the test synchronous. The test finishes before the promise settles, so an `expect` inside `.then()` does not run inside the test. If the promise settles later, the test passes with zero assertions — a silent false positive. If the promise is already resolved, the `expect` runs just after the test ends, and a failing one is an uncaught error that takes down the run: with `--runInBand` the Node process exits with no test summary; with workers, Jest reports "Jest worker encountered 4 child process exceptions, exceeding retry limit".
 
 ## Incorrect
 
@@ -17,7 +17,7 @@ If a test calls an async function but does not `await` or `return` the promise, 
 // BUG: Missing `await` — test completes before the promise resolves
 test('fetches user', () => {
   fetchUser(1).then(user => {
-    expect(user.name).toBe('Alice'); // NEVER EXECUTES
+    expect(user.name).toBe('Alice'); // does not run inside the test
   });
   // test ends here, passes with 0 assertions
 });
@@ -28,7 +28,7 @@ test('fetches user', () => {
 test('fetches user', () => {
   // no return statement
   fetchUser(1).then(user => {
-    expect(user.name).toBe('Alice'); // NEVER EXECUTES
+    expect(user.name).toBe('Alice'); // does not run inside the test
   });
 });
 ```

@@ -82,10 +82,12 @@ module.exports = {
 You can also set thresholds per file using glob patterns:
 
 ```javascript
-coverageThreshold: {
-  './src/payments/**/*.ts': {
-    branches: 90,
-    lines: 95,
+module.exports = {
+  coverageThreshold: {
+    './src/payments/**/*.ts': {
+      branches: 90,
+      lines: 95,
+    },
   },
-}
+};
 ```

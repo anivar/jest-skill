@@ -9,7 +9,7 @@ tags: async, done, callback, try-catch, timeout
 
 ## Problem
 
-When using Jest's `done` callback for async tests, a failing `expect()` throws an error. If the error is not caught, `done()` is never called, and the test times out after 5 seconds with a generic timeout message instead of showing the actual assertion failure. This makes debugging much harder.
+When using Jest's `done` callback for async tests, a failing `expect()` throws an error. If the error is not caught, `done()` is never called. Jest 30 still reports the assertion error, but only after the test has waited out the full timeout (5 seconds by default), and it adds a second failure for the timeout. Every broken callback test then costs the full timeout, and the report mixes the real failure with a timeout failure.
 
 ## Incorrect
 
@@ -21,7 +21,8 @@ test('calls callback with data', (done) => {
     done(); // never reached
   });
 });
-// Output: "Timeout - Async callback was not invoked within the 5000 ms timeout"
+// Output, after 5 s: the assertion error, then
+// "Exceeded timeout of 5000 ms for a test while waiting for `done()` to be called."
 ```
 
 ## Correct
@@ -57,7 +58,7 @@ test('calls callback with data', async () => {
 
 - `done(error)` tells Jest the test failed and provides the actual error message.
 - `done()` with no argument tells Jest the test passed.
-- If neither is called, Jest waits until timeout — you lose the real failure info.
+- If neither is called, Jest waits for the full timeout before it reports the failure.
 
 **Prefer async/await over `done`**. The `done` callback pattern exists for legacy callback-based APIs. Modern code should promisify callbacks and use `async`/`await`, which eliminates this entire class of bugs. Jest still supports `done` — upstream treats callbacks, promises and async/await as equally valid: "None of these forms is particularly superior to the others." The one hard rule is that they cannot be combined: "Jest will throw an error, if the same test function is passed a `done()` callback and returns a promise."
 

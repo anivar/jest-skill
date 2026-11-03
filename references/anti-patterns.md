@@ -66,13 +66,17 @@ expect(() => throwingFn()).toThrow();
 
 ```javascript
 // BAD: Implementations persist
-afterEach(() => jest.clearAllMocks());
+afterEach(() => {
+  jest.clearAllMocks();
+});
 
 // GOOD
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 
-// BEST
-// jest.config.js: { restoreMocks: true }
+// BEST: restoreMocks alone keeps call history, so add clearMocks
+// jest.config.js: { clearMocks: true, restoreMocks: true }
 ```
 
 ## 6. Shared Mutable State
@@ -82,7 +86,9 @@ afterEach(() => jest.restoreAllMocks());
 const items = [];
 test('adds item', () => { items.push('a'); expect(items).toHaveLength(1); });
 test('adds another', () => { items.push('b'); expect(items).toHaveLength(2); }); // order-dependent
+```
 
+```javascript
 // GOOD
 let items;
 beforeEach(() => { items = []; });
@@ -93,10 +99,10 @@ test('adds another', () => { items.push('b'); expect(items).toHaveLength(1); });
 ## 7. runAllTimers With Recursive Timers
 
 ```javascript
-// BAD: Infinite loop
+// BAD: a timer callback that schedules a new timer
 jest.useFakeTimers();
-startPolling();
-jest.runAllTimers(); // hangs
+startTicker();
+jest.runAllTimers(); // throws: Aborting after running 100000 timers, assuming an infinite loop!
 
 // GOOD
 jest.runOnlyPendingTimers();
@@ -140,7 +146,7 @@ jest.mock('./utils', () => ({
 // GOOD: Use test.each with synchronous data
 const cases = require('./cases.json');
 test.each(cases)('$name', ({ input, expected }) => {
-  expect(process(input)).toBe(expected);
+  expect(transform(input)).toBe(expected);
 });
 ```
 

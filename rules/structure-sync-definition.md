@@ -9,7 +9,7 @@ tags: structure, sync, definition, describe, test, registration
 
 ## Problem
 
-Jest discovers tests by running the file synchronously and collecting all `test()` and `describe()` calls. If you define tests inside an `async` callback, a `setTimeout`, or a `.then()` handler, Jest finishes collection before those callbacks execute. The tests are never registered and never run — the test file passes with zero tests, which is a silent failure.
+Jest discovers tests by running the file synchronously and collecting all `test()` and `describe()` calls. If you define tests inside an `async` callback, a `setTimeout`, or a `.then()` handler, Jest finishes collection before those callbacks execute. Those tests never run, and the file fails with an error that does not name the cause. With no synchronous test, Jest reports `Your test suite must contain at least one test.` With at least one synchronous test, the suite fails with `Cannot add a test after tests have started running. Tests must be defined synchronously.`
 
 ## Incorrect
 

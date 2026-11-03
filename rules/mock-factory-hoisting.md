@@ -9,17 +9,22 @@ tags: mock, hoisting, factory, jest.mock, scope
 
 ## Problem
 
-Calls to `jest.mock()` are hoisted to the top of the file, so it is not possible to first define a variable and then use it in the factory. Jest makes an exception for variables whose name starts with the word `mock`.
+Calls to `jest.mock()` are hoisted to the top of the file, so it is not possible to first define a variable and then use it in the factory. Jest makes an exception for variables whose name starts with the word `mock`. `babel-plugin-jest-hoist` also accepts a `const` whose initializer is pure (a literal, or an object or array of literals) and moves that declaration up with the `jest.mock()` call. A variable set by a function call is rejected when the file is transformed.
 
 ## Incorrect
 
 ```javascript
-// BUG: `fakeUser` does not start with `mock`, so the factory may not reference it
-const fakeUser = { id: 1, name: 'Alice' };
+// BUG: `fakeUser` does not start with `mock` and is set by a function call,
+// so the transform rejects the factory
+const { buildUser } = require('./factories');
+const fakeUser = buildUser({ name: 'Alice' });
 
 jest.mock('./userService', () => ({
   getUser: jest.fn(() => fakeUser),
 }));
+// ReferenceError: The module factory of `jest.mock()` is not allowed to
+// reference any out-of-scope variables.
+// Invalid variable access: fakeUser
 ```
 
 ## Correct
@@ -54,9 +59,9 @@ test('returns user', () => {
 
 ## Why
 
-The `mock` prefix exception exists specifically for this hoisting issue. Jest's Babel plugin detects variables starting with `mock` and allows them in the hoisted scope. However, this is fragile:
+The `mock` prefix exception exists specifically for this hoisting issue. Jest's Babel plugin accepts any name that matches `/^mock/i` (`mockUser`, `mocked` and `MockUser` all pass), and a `const` with a pure initializer. It does not move a `mock`-prefixed declaration. Upstream: "it is still up to you to guarantee that they will be initialized on time. Be aware of Temporal Dead Zone." This is fragile:
 
-- Misspelling the prefix (e.g., `mocked`, `my_mock`) breaks the exception.
-- The variable is still uninitialized if it depends on other imports.
+- A name such as `my_mock` or `fakeUser` is rejected unless its initializer is pure.
+- A factory that reads a `mock` variable while the factory runs, not later inside a returned function, depends on when the module is first required.
 
 **Safest approach**: Define the mock return value inside individual tests using `mockReturnValue` or `mockImplementation`, not in the factory.

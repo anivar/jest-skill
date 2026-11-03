@@ -1,7 +1,7 @@
 ---
 title: Use runOnlyPendingTimers for recursive timers
 impact: HIGH
-description: jest.runAllTimers enters an infinite loop when code schedules new timers inside timer callbacks (e.g., recursive setTimeout). Use runOnlyPendingTimers instead.
+description: jest.runAllTimers throws after 100000 timers when a timer callback schedules a new timer (e.g., recursive setTimeout). Use runOnlyPendingTimers or advanceTimersByTime instead.
 tags: timer, runAllTimers, runOnlyPendingTimers, recursive, setTimeout, infinite-loop
 ---
 
@@ -9,37 +9,62 @@ tags: timer, runAllTimers, runOnlyPendingTimers, recursive, setTimeout, infinite
 
 ## Problem
 
-`jest.runAllTimers()` runs all pending timers, including any new timers created during execution. If a timer callback schedules another timer (common in polling, retry, and animation patterns), `runAllTimers` enters an infinite loop and the test hangs or crashes with a max recursion error.
+`jest.runAllTimers()` runs all pending timers, including any new timers created during execution. If a timer callback schedules another timer (common in polling, retry, and animation patterns), `runAllTimers` never runs out of timers. Jest stops it and throws `Aborting after running 100000 timers, assuming an infinite loop!`.
 
 ## Incorrect
 
 ```javascript
-// BUG: poll() schedules a new setTimeout each time — runAllTimers loops forever
-function poll(callback) {
-  fetchData().then(data => {
-    callback(data);
-    setTimeout(() => poll(callback), 1000); // recursive timer
-  });
+// BUG: tick() schedules the next timer from inside the timer callback
+function startTicker(callback) {
+  const tick = () => {
+    callback();
+    setTimeout(tick, 1000); // recursive timer
+  };
+  setTimeout(tick, 1000);
 }
 
-test('polls for data', () => {
+test('ticks', () => {
   jest.useFakeTimers();
   const cb = jest.fn();
-  poll(cb);
-  jest.runAllTimers(); // INFINITE LOOP — hangs or throws "Aborting after running 100000 timers"
+  startTicker(cb);
+  jest.runAllTimers(); // throws: Aborting after running 100000 timers, assuming an infinite loop!
 });
 ```
 
 ## Correct
 
+```javascript
+test('ticks once per second', () => {
+  jest.useFakeTimers();
+  const cb = jest.fn();
+  startTicker(cb);
+
+  jest.runOnlyPendingTimers(); // runs the queued timer; the timer it schedules waits
+  expect(cb).toHaveBeenCalledTimes(1);
+
+  jest.advanceTimersByTime(3000);
+  expect(cb).toHaveBeenCalledTimes(4);
+});
+```
+
+### When the timer is scheduled inside a promise callback
+
 `poll()` schedules its `setTimeout` **inside** a `.then()`, so the timer does not
 exist until the promise callback has run. The synchronous timer methods do not
 flush promise callbacks, so at the moment they are called there is nothing
-queued. Use the async variants, which run scheduled promise callbacks before
-advancing the clock — and note the counts include the call from the initial
-fetch, not just the timer-driven ones.
+queued: `runAllTimers()` returns at once and the callback has run 0 times. Use
+the async variants, which run scheduled promise callbacks before advancing the
+clock — and note the counts include the call from the initial fetch, not just
+the timer-driven ones.
 
 ```javascript
+function poll(callback) {
+  fetchData().then(data => {
+    callback(data);
+    setTimeout(() => poll(callback), 1000); // recursive timer, queued from a promise callback
+  });
+}
+
 test('polls for data', async () => {
   jest.useFakeTimers();
   const cb = jest.fn();
@@ -71,7 +96,7 @@ test('polls every second', async () => {
 
 | Method | Behavior | Safe for recursive timers |
 |---|---|---|
-| `runAllTimers()` | Runs all timers including newly created ones | No — infinite loop |
+| `runAllTimers()` | Runs all timers including newly created ones | No — throws after 100000 timers |
 | `runOnlyPendingTimers()` | Runs only timers in the queue at call time | Yes, but does not flush promise callbacks |
 | `advanceTimersByTime(ms)` | Advances clock by `ms`, running timers that fire | Yes, but does not flush promise callbacks |
 | `advanceTimersToNextTimer()` | Advances to the next timer and runs it | Yes, but does not flush promise callbacks |

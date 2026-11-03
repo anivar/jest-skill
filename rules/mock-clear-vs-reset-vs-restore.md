@@ -53,24 +53,30 @@ test('second', () => {
 | Function | Clears calls/instances | Removes mock implementation | Restores original |
 |---|---|---|---|
 | `clearAllMocks` | Yes | No | No |
-| `resetAllMocks` | Yes | Yes (resets to `jest.fn()`) | No |
-| `restoreAllMocks` | Yes | Yes | Yes — `spyOn` / `replaceProperty` only |
+| `resetAllMocks` | Yes | Yes — every mock then returns `undefined`, including `jest.fn(impl)` and spies | No |
+| `restoreAllMocks` | No | No | Yes — `spyOn` / `replaceProperty` only |
 
 `restoreAllMocks` reaches less far than the other two: upstream restricts it to mocks created
 with `jest.spyOn()` and properties replaced with `jest.replaceProperty()`. A method you
-overwrote by hand with `jest.fn()` is not restored — see `rules/mock-spy-restore.md`.
+overwrote by hand with `jest.fn()` is not restored — see `rules/mock-spy-restore.md`. It also
+does not clear call history: a restored spy keeps its recorded calls, and a plain `jest.fn` keeps
+its calls and its implementation (measured on Jest 30.5.2).
+
+Called on one mock, `mockRestore()` does more than `restoreAllMocks`: it clears the calls,
+removes the implementation, and restores the original when the mock is a spy.
 
 ## Why
 
 - **clearAllMocks**: Use between tests when you want to keep the mock implementation but reset counters (e.g., checking `toHaveBeenCalledTimes` per test).
 - **resetAllMocks**: Use when you want every test to set up its own mock implementation from scratch. Mocks become no-op `jest.fn()`.
-- **restoreAllMocks**: Use when you used `jest.spyOn` and want the original implementation back. This is the safest default for `afterEach`.
+- **restoreAllMocks**: Use when you used `jest.spyOn` and want the original implementation back. It leaves call history and the implementations of other mocks in place, so pair it with `clearAllMocks`.
 
-Prefer setting `restoreMocks: true` in `jest.config` so you never forget:
+Prefer setting `clearMocks: true` and `restoreMocks: true` in `jest.config` so you never forget. `restoreMocks` alone lets call history carry into the next test: a `jest.fn` from a `jest.mock` factory, called once in one test, still shows 1 call in the next.
 
 ```javascript
 // jest.config.js
 module.exports = {
+  clearMocks: true,
   restoreMocks: true,
 };
 ```

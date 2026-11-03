@@ -1,5 +1,48 @@
 # Changelog
 
+## 1.2.1
+
+Checked against **jest 30.5.2**. Every changed example was executed with the default `babel-jest` on Node.js 26.12.1, and on Node.js 22.23.3 and 24.22.1 where a claim depends on the Node version. Every changed block was type-checked with TypeScript 5.9.
+
+### Corrected — the skill taught something untrue
+
+- **The hoisting rule's Incorrect example ran.** `rules/mock-factory-hoisting.md` used `const fakeUser = { id: 1, name: 'Alice' }`. `babel-plugin-jest-hoist` accepts a `const` with a pure initializer and moves it up with the mock. The example now sets `fakeUser` with a function call, which the transform rejects ("The module factory of `jest.mock()` is not allowed to reference any out-of-scope variables"). The rule states the pure-constant exception (also in `AGENTS.md`).
+- **`mocked` does not break the `mock` prefix exception.** The plugin tests `/^mock/i`, so `mocked` and `MockUser` pass. Executed: a factory that reads `mockedUser` runs; one that reads `my_mock` is rejected.
+- **The ESM Incorrect example failed for a different reason than stated.** Without an import of `jest`, the file fails with `ReferenceError: jest is not defined`. The example now imports `jest` from `@jest/globals`, and then fails as the comment says: `TypeError: fetchUser.mockReturnValue is not a function`.
+- **`runAllTimers()` on a recursive timer does not hang.** It throws `Aborting after running 100000 timers, assuming an infinite loop!` (`rules/timer-recursive-safety.md`, `references/anti-patterns.md`, `AGENTS.md`). The rule's Incorrect example queued its timer inside `.then()`, where `runAllTimers()` finds no timer and returns at once. It now uses a timer that schedules itself, and the promise case has its own section. Executed: the counts in both Correct sections (1 then 4; 2 then 3; 4).
+- **A faked `Date` does not make uuid repeat IDs.** uuid 14.0.3 `v1`, `v4` and `v7` return distinct IDs under `jest.useFakeTimers()`. `rules/timer-selective-faking.md` now shows timing real I/O with `performance.now()`, which reads 0 ms when `performance` is faked. Executed both ways. A `Date.now()`-based ID was not used: it repeats with the real clock too (998 of 1000 back-to-back pairs).
+- **`restoreAllMocks` does not clear calls or remove implementations.** It restores spies and replaced properties only. A restored spy keeps its calls, and a plain `jest.fn` keeps its calls and implementation. The cleanup tables in `rules/mock-clear-vs-reset-vs-restore.md`, `references/mock-functions.md` and `AGENTS.md` now follow a measured matrix of each cleanup against `jest.fn(impl)`, `mockReturnValue` and `spyOn`.
+- **`restoreMocks: true` alone lets call history carry between tests.** Executed: a factory `jest.fn` called in one test shows 1 call in the next. Every place that recommends the config now recommends `clearMocks: true` with `restoreMocks: true`. The config comments said "after each test"; the flags run before each test.
+- **A `done` test with a failing `expect` still reports the assertion.** Jest 30 prints the assertion error after the 5 s timeout, then "Exceeded timeout of 5000 ms for a test while waiting for `done()` to be called." The quoted "Timeout - Async callback was not invoked" is not Jest 30's text (`rules/async-done-try-catch.md`, `AGENTS.md`).
+- **Tests defined late do not pass silently.** With no synchronous test the file fails with "Your test suite must contain at least one test."; with one, "Cannot add a test after tests have started running. Tests must be defined synchronously." (`rules/structure-sync-definition.md`, `AGENTS.md`).
+- **A missing `await` is not always a silent pass.** When the promise is already resolved, a failing assertion is an uncaught error that takes down the run (`rules/async-always-await.md`, `AGENTS.md`).
+- **`using spy = jest.spyOn(...)` does not need a transform on a current runtime.** With the default `babel-jest` it runs on Node.js 24.22.1 and 26.12.1, and fails on 22.23.3 with `SyntaxError: Unexpected identifier 'spy'` (`rules/mock-spy-restore.md`, `AGENTS.md`).
+- **`@jest/globals` has no `Mocked` export** (TS2305). The type is `jest.Mocked` (`references/mock-functions.md`).
+- **One config object had two `testEnvironment` keys** (TS1117), so a copy kept only the last (`references/configuration.md`).
+- **The compatibility field said `jest ^30.0.0`** while the description, README and AGENTS.md said `^30.5.2`. It now says `^30.5.2`.
+- **The ESM-package rule did not work as written.** `rules/config-transform-node-modules.md` said uuid is ESM-only since v9 (v9–v11 ship CommonJS; v12 is the first ESM-only release), quoted an error Jest 30.5.2 does not print (it says `Must use import to load ES Module`), and implied that the `transformIgnorePatterns` pattern is enough. Executed with uuid 14.0.3 on Node.js 22.23.3 and 26.12.1: the pattern passes only with a project-wide `babel.config.js` that compiles ESM; with no Babel config or with a `.babelrc` it fails. The `moduleNameMapper` fallback resolves to an ES module for uuid 12+. The rule now says so, and adds the Node.js 24.9+ route: `--experimental-vm-modules` lets Jest `require()` the package with no transform (also in `AGENTS.md` and `references/configuration.md`).
+- **Companion skills that do not exist.** `react-native-testing` and `java-testing` are removed from `SKILL.md` and `README.md`. The msw companion is described as MSW 3, its current baseline.
+
+### Added
+
+- **ESM automocking on Node.js 24.9+** (`rules/module-esm-unstable-mock.md`, `AGENTS.md`). With `automock: true`, static `import` and `import()` of an ES module get an automock, and a sibling `__mocks__` file replaces it. Executed on Node.js 24.22.1 and 26.12.1; on 22.23.3 it fails with `Attempting to import a mock without a factory`. Without `automock`, `jest.mock()` still does not mock an ES module, even with a `__mocks__` file.
+- **Jest's agent reporter** (`references/ci-and-debugging.md`, `AGENTS.md`). Since Jest 30.3, an agent environment variable such as `CLAUDECODE` or `AI_AGENT` makes Jest print only failing files and the summary, unless `reporters` is set. Executed: passing files and their `console.log` output disappear; `--reporters=default` or a `reporters` entry in the config brings them back.
+- **`workerGracefulExitTimeout`** and **per-project `verbose` and `silent`** in `references/configuration.md`. Executed: the option is accepted, and `silent: true` on one project hides only that project's console output.
+
+### Changed
+
+- The "Jest 30.4–30.5 Additions" section in `SKILL.md` is removed. Each item now lives in the reference for its topic: `whenCalledWith` in `references/mock-functions.md`, `entireDescribe` retries in `references/jest-object.md`, `--collectTests` and the richer retry output in `references/ci-and-debugging.md`, Temporal in `rules/timer-selective-faking.md`, Node type stripping in `references/configuration.md`, and the wider `toMatchObject` type in `references/matchers.md`. `defineConfig`, `mergeConfig` and `jest.config.mts` were already in `references/configuration.md`. Executed: `whenCalledWith` with literals and an asymmetric matcher, an `entireDescribe` retry, and `--collectTests` with `test.each` and `test.todo`.
+- Examples that did not parse or type-check now do: a config fragment, a block that declared `items` twice, hooks that returned the `jest` object, and a helper named `process`.
+- This file lists releases newest first.
+
+## 1.2.0
+
+Baseline raised from `^30.0.0` to `^30.5.2` in `SKILL.md`, `AGENTS.md` and `README.md` (audited against jest 30.5.2); `metadata.version` is now 1.2.0.
+
+### Added
+
+A "Jest 30.4–30.5 Additions" section in `SKILL.md`: `mockFn.whenCalledWith()` for per-argument-list mock configuration with asymmetric-matcher support; describe-level retries via `jest.retryTimes(n, { entireDescribe: true })`; expanded `--collectTests` with per-status counts; nested `cause`/`AggregateError` code frames in retry and unhandled-rejection output; `defineConfig`/`mergeConfig`; `jest.config.mts`; Temporal duration/instant support in fake timers; Node-native TypeScript stripping for untransformed `.ts`/`.mts`/`.cts` files; and the widened `object` parameter type in `toMatchObject`/`objectContaining`.
+
 ## 1.1.0
 
 Audited against **jest 30.4.2** (latest upstream release at the time of writing; every code
@@ -101,11 +144,3 @@ rewritten to match observed behaviour: the `.rejects` failure mode, the fate of 
 ## 1.0.0
 
 Initial release: 28 rules, 9 references.
-
-## 1.2.0
-
-Baseline raised from `^30.0.0` to `^30.5.2` in `SKILL.md`, `AGENTS.md` and `README.md` (audited against jest 30.5.2); `metadata.version` is now 1.2.0.
-
-### Added
-
-A "Jest 30.4–30.5 Additions" section in `SKILL.md`: `mockFn.whenCalledWith()` for per-argument-list mock configuration with asymmetric-matcher support; describe-level retries via `jest.retryTimes(n, { entireDescribe: true })`; expanded `--collectTests` with per-status counts; nested `cause`/`AggregateError` code frames in retry and unhandled-rejection output; `defineConfig`/`mergeConfig`; `jest.config.mts`; Temporal duration/instant support in fake timers; Node-native TypeScript stripping for untransformed `.ts`/`.mts`/`.cts` files; and the widened `object` parameter type in `toMatchObject`/`objectContaining`.

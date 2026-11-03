@@ -51,13 +51,14 @@ test('later test', () => {
 // Option 2: Config-level (preferred)
 // jest.config.js
 module.exports = {
+  clearMocks: true,   // restoreMocks alone keeps call history between tests
   restoreMocks: true,
 };
 ```
 
 ```javascript
-// Option 3: `using` for a scope-bound spy — needs explicit resource management
-// (TypeScript >= 5.2 or @babel/plugin-proposal-explicit-resource-management)
+// Option 3: `using` for a scope-bound spy — the runtime must support `using`
+// (see the note at the end of this rule)
 test('logs a warning', () => {
   using spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
   console.warn('watch out');
@@ -67,7 +68,7 @@ test('logs a warning', () => {
 
 ## Why
 
-Setting `restoreMocks: true` in config is the safest approach because:
+Setting `restoreMocks: true` in config, together with `clearMocks: true`, is the safest approach because:
 
 1. It applies globally — no test file can forget.
 2. It restores the original implementation, not just a no-op `jest.fn()`.
@@ -78,6 +79,8 @@ Setting `restoreMocks: true` in config is the safest approach because:
    `restoreMocks: true`: a hand-assigned `obj.method = jest.fn(...)` is left completely
    untouched between tests — still the fake, still carrying its implementation. Prefer
    `jest.spyOn(obj, 'method')` over manual assignment so restore applies.
+4. It does not clear call history. A restored spy keeps its calls, and so does every
+   `jest.fn`; `clearMocks: true` clears them before each test.
 
 If you only need the spy for a single assertion, use the spy's own `.mockRestore()`:
 
@@ -103,5 +106,8 @@ test('testing something', () => {
 });
 ```
 
-Keep `restoreMocks: true` as the default — `using` needs transpiler support, and if you get a
-warning that `Symbol.dispose` does not exist you also need the polyfill documented upstream.
+Keep `clearMocks: true` with `restoreMocks: true` as the default. `using` needs a runtime that supports it. With the
+default `babel-jest` on Jest 30.5.2, it runs on Node 24.22.1 and 26.12.1, and fails on Node
+22.23.3 with `SyntaxError: Unexpected identifier 'spy'`. On an older runtime, lower it with
+TypeScript >= 5.2 or `@babel/plugin-proposal-explicit-resource-management`. If you get a warning
+that `Symbol.dispose` does not exist, you also need the polyfill documented upstream.
