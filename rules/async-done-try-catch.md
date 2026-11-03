@@ -64,6 +64,7 @@ test('calls callback with data', async () => {
 
 ```javascript
 // FAILS: "Test functions cannot both take a 'done' callback and return something."
+// @ts-expect-error a test function cannot both take done and return a promise
 test('either/or, never both', async (done) => {
   done();
 });

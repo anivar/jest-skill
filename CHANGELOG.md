@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.4
+
+Checked against **jest 30.5.2**.
+
+### Corrected — the skill taught something untrue
+
+- **`references/async-patterns.md` quoted an error Jest does not print** for a test that is `async` and takes `done`. Executed: Jest 30.5.2 fails the test with "Test functions cannot both take a 'done' callback and return something", whether or not `done()` is called, so the comment on the `done()` line is removed too.
+
+### Changed
+
+- The two Incorrect examples of an `async` test that takes `done` carry `// @ts-expect-error`, so a type check reports them as intended failures (`references/async-patterns.md`, `rules/async-done-try-catch.md`).
+
 ## 1.2.3
 
 Checked against **jest 30.5.2** with React 19.3.1 and `@testing-library/react` 16.3.3. Every changed example was executed or type-checked with TypeScript 5.9.

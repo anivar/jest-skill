@@ -13,7 +13,7 @@ compatibility: "JavaScript/TypeScript projects using jest ^30.5.2 (audited again
 metadata:
   author: Anivar Aravind
   author_url: https://anivar.net
-  version: 1.2.3
+  version: 1.2.4
   tags: jest, testing, unit-test, mock, spy, snapshot, matcher, async, timer, ci
 ---
 

@@ -161,10 +161,11 @@ test('resolves', async () => {
 ### Mixing done and async
 
 ```javascript
-// BUG: Jest throws "An Async callback was invoked..."
+// BUG: Jest fails the test: "Test functions cannot both take a 'done' callback and return something."
+// @ts-expect-error a test function cannot both take done and return a promise
 test('bad', async (done) => {
   const data = await fetch('/api');
-  done(); // ERROR — cannot use done with async
+  done();
 });
 
 // FIX: Remove done, just use async/await
