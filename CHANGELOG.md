@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.5
+
+Checked against **jest 30.5.2**.
+
+### Corrected — the skill taught something untrue
+
+- **Two cleanup comments still said `restoreAllMocks()` clears mocks.** 1.2.1 corrected this claim in the rules and tables but missed `references/jest-object.md` ("clear + remove + restore originals") and `references/module-mocking.md` ("restore spied/mocked implementations", under "Clearing Module Mocks"). As executed for 1.2.1, `restoreAllMocks()` restores spies and replaced properties, and a `jest.fn` keeps its calls and implementation. The module-mocking block now clears calls with `clearAllMocks()`.
+
 ## 1.2.4
 
 Checked against **jest 30.5.2**.

@@ -209,7 +209,7 @@ switch back to `manual`.
 ```javascript
 jest.clearAllMocks();      // clear call history
 jest.resetAllMocks();      // clear + remove implementations
-jest.restoreAllMocks();    // clear + remove + restore originals
+jest.restoreAllMocks();    // restore spies and replaced properties; calls and implementations stay
 ```
 
 ## Test Configuration

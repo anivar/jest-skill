@@ -248,8 +248,9 @@ test('calls fetchUser', () => {
 ## Clearing Module Mocks
 
 ```javascript
-jest.resetModules();  // clear module cache — next require loads fresh
-jest.restoreAllMocks(); // restore spied/mocked implementations
+jest.resetModules();    // clear module cache — next require loads fresh
+jest.clearAllMocks();   // clear the calls of every mock, module mocks included
+jest.restoreAllMocks(); // restore jest.spyOn spies; module mocks keep their calls and implementations
 ```
 
 ## TypeScript: Typing Mocked Modules
