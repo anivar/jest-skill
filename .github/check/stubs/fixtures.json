@@ -1,0 +1,3 @@
+[
+  { "name": "accepts an adult", "input": 30, "expected": true }
+]
