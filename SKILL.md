@@ -13,7 +13,7 @@ compatibility: "JavaScript/TypeScript projects using jest ^30.5.2 (audited again
 metadata:
   author: Anivar Aravind
   author_url: https://anivar.net
-  version: 1.2.1
+  version: 1.2.2
   tags: jest, testing, unit-test, mock, spy, snapshot, matcher, async, timer, ci
 ---
 
@@ -103,6 +103,7 @@ Jest is a JavaScript/TypeScript testing framework for unit tests, integration te
 ### 9. Performance & CI (MEDIUM)
 
 - `perf-ci-workers` — --runInBand or --maxWorkers for CI
+- `perf-agent-reporter` — Inside an AI agent, pass --reporters=default to see passing files and their console output
 - `perf-isolate-modules` — jest.isolateModules for per-test module state
 
 ## Jest API Quick Reference

@@ -10,7 +10,7 @@ AI agents frequently generate outdated or incorrect Jest patterns — wrong mock
 
 ## This Solution
 
-28 rules with incorrect→correct code examples that teach agents Jest's actual API behavior, mock lifecycle, async patterns, timer control, module mocking, snapshot testing, configuration, and CI optimization. Each rule targets a specific mistake and shows exactly how to fix it.
+29 rules with incorrect→correct code examples that teach agents Jest's actual API behavior, mock lifecycle, async patterns, timer control, module mocking, snapshot testing, configuration, and CI optimization. Each rule targets a specific mistake and shows exactly how to fix it.
 
 ## Install
 
@@ -31,7 +31,7 @@ npx skills add https://github.com/anivar/jest-skill
 
 ## What's Inside
 
-### 28 Rules Across 9 Categories
+### 29 Rules Across 9 Categories
 
 | Priority | Category | Rules | Impact |
 |----------|----------|-------|--------|
@@ -43,7 +43,7 @@ npx skills add https://github.com/anivar/jest-skill
 | 6 | Module Mocking | 3 | MEDIUM |
 | 7 | Snapshot Testing | 3 | MEDIUM |
 | 8 | Configuration | 3 | MEDIUM |
-| 9 | Performance & CI | 2 | MEDIUM |
+| 9 | Performance & CI | 3 | MEDIUM |
 
 Each rule file contains:
 - Why it matters

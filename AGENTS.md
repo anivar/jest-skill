@@ -579,7 +579,7 @@ npx jest --maxWorkers=50%         # scales with container
 npx jest --shard=1/4              # split across CI jobs
 ```
 
-### Rule: Jest Quiets Its Output Inside an AI Agent
+### Rule: Get Full Output from Jest Inside an AI Agent
 
 Since Jest 30.3, when an agent environment variable such as `AI_AGENT`, `CLAUDECODE`, `CURSOR_AGENT` or `GEMINI_CLI` is set and the config has no `reporters`, Jest uses an agent reporter: it prints only the files with failures (with their console output) and the summary. Passing files and their `console.log` output do not appear. To see them, pass `--reporters=default` or set `reporters` in the config.
 

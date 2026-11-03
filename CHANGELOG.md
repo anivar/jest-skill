@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.2
+
+### Fixed
+
+- **The agent-reporter guidance had no rule file.** 1.2.1 added it to `AGENTS.md` as a rule, but `rules/` and the `SKILL.md` quick reference did not list it. It is now `rules/perf-agent-reporter.md`, listed in `SKILL.md` and counted in `README.md` (29 rules). The rule gives the full list of agent environment variables that Jest 30.5.2 checks, and says that `--verbose` does not restore the passing-file lines.
+
 ## 1.2.1
 
 Checked against **jest 30.5.2**. Every changed example was executed with the default `babel-jest` on Node.js 26.12.1, and on Node.js 22.23.3 and 24.22.1 where a claim depends on the Node version. Every changed block was type-checked with TypeScript 5.9.
