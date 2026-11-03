@@ -1,0 +1,26 @@
+{
+  "name": "jest-skill-check",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "blocks": "bun blocks.ts",
+    "index": "bun index.ts",
+    "guards": "bun test guards.test.ts",
+    "claims": "node node_modules/jest/bin/jest.js --config claims/jest.config.cjs --ci",
+    "check": "bun blocks.ts && bun index.ts && bun test guards.test.ts && node node_modules/jest/bin/jest.js --config claims/jest.config.cjs --ci"
+  },
+  "devDependencies": {
+    "@jest/globals": "30.5.2",
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/react-test-renderer": "19.3.0",
+    "jest": "30.5.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "5.9.3"
+  }
+}

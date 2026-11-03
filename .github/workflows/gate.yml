@@ -1,0 +1,59 @@
+# Type-checks every code block in the skill, checks that the index files agree, runs the text guards, and runs
+# the behaviour claims with the pinned Jest. The weekly job runs the blocks, guards and claims against
+# jest@latest, so a new Jest release that breaks a claim fails visibly. A release of the skill stays a manual step.
+name: gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      - name: Install the pinned Jest, TypeScript and example libraries
+        working-directory: .github/check
+        run: bun install --frozen-lockfile
+      - name: Blocks, index, guards, claims
+        working-directory: .github/check
+        run: bun run check
+
+  jest-latest:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+      - name: Install, then move Jest to the latest release
+        working-directory: .github/check
+        run: |
+          bun install --frozen-lockfile
+          bun add --dev --exact jest@latest @jest/globals@latest
+          bun pm ls | grep -E ' (jest|@jest/globals)@'
+      # index.ts is skipped here: it requires the pinned jest to equal the version SKILL.md was audited against.
+      - name: Blocks, guards and claims against jest@latest
+        working-directory: .github/check
+        run: bun blocks.ts && bun test guards.test.ts && node node_modules/jest/bin/jest.js --config claims/jest.config.cjs --ci
