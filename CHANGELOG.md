@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.3
+
+Checked against **jest 30.5.2** with React 19.3.1 and `@testing-library/react` 16.3.3. Every changed example was executed or type-checked with TypeScript 5.9.
+
+### Corrected — the skill taught something untrue
+
+- **Snapshot examples used `react-test-renderer`, which React 19 deprecates.** Executed on React 19.3.1: each `renderer.create()` call logs "react-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer". The Jest snapshot docs render with `@testing-library/react` and snapshot `container.firstChild`. The examples in `references/snapshot-testing.md`, `references/anti-patterns.md`, `rules/snapshot-keep-small.md` and `AGENTS.md` now do the same; executed, the new form writes the expected snapshot.
+- **`jest.mocked(require('./api'))` was said to be typed.** In TypeScript `require()` returns `any`, so the result is `any`: type-checked, a wrong assignment and a call with wrong arguments both compile. `jest.mocked()` on an imported module gives `jest.MockedFunction<typeof fetchUser>` members and rejects a wrong resolved value. `references/jest-object.md`, `references/mock-functions.md` and `references/module-mocking.md` now pass the import.
+
+### Changed
+
+- The Incorrect example in `rules/structure-sync-definition.md` iterated the `Response` from `fetch()` as if it were the array of cases. It now calls `.json()` first, so the only bug it shows is the asynchronous test definition.
+- The test-isolation example in `AGENTS.md` declared `items` twice in one block. Incorrect and Correct are now separate blocks, so each one runs as written.
+
 ## 1.2.2
 
 ### Fixed

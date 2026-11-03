@@ -208,10 +208,10 @@ afterEach(() => {
 
 ```javascript
 // BAD: 500-line snapshot nobody reviews
-expect(renderer.create(<EntirePage />).toJSON()).toMatchSnapshot();
+expect(render(<EntirePage />).container.firstChild).toMatchSnapshot();
 
 // GOOD: Small, focused snapshots
-expect(renderer.create(<Header />).toJSON()).toMatchSnapshot();
+expect(render(<Header />).container.firstChild).toMatchSnapshot();
 expect(formatOutput(data)).toMatchInlineSnapshot(`"expected output"`);
 ```
 

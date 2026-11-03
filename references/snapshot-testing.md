@@ -7,11 +7,16 @@
 Compares the serialized value against a stored snapshot file (`.snap`). On first run, creates the snapshot. On subsequent runs, compares against it.
 
 ```javascript
+import { render } from '@testing-library/react';
+
 test('renders correctly', () => {
-  const tree = renderer.create(<Button label="Click" />).toJSON();
-  expect(tree).toMatchSnapshot();
+  const { container } = render(<Button label="Click" />);
+  expect(container.firstChild).toMatchSnapshot();
 });
 ```
+
+Render React components with `@testing-library/react`, as the Jest snapshot docs do. React 19 deprecates
+`react-test-renderer`: each `renderer.create()` call logs "react-test-renderer is deprecated".
 
 ### `toMatchInlineSnapshot(propertyMatchers?, snapshot?)`
 
@@ -160,11 +165,11 @@ Snapshot large component trees into individual pieces:
 
 ```javascript
 // Bad: entire page
-expect(renderer.create(<Page />).toJSON()).toMatchSnapshot();
+expect(render(<Page />).container.firstChild).toMatchSnapshot();
 
 // Good: individual components
-expect(renderer.create(<Header />).toJSON()).toMatchSnapshot();
-expect(renderer.create(<Sidebar />).toJSON()).toMatchSnapshot();
+expect(render(<Header />).container.firstChild).toMatchSnapshot();
+expect(render(<Sidebar />).container.firstChild).toMatchSnapshot();
 ```
 
 ### Prefer inline snapshots for small values

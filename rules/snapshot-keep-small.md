@@ -16,8 +16,8 @@ Snapshotting an entire component tree or large data structure produces hundreds 
 ```javascript
 // BUG: Snapshot of entire page component — 500+ lines, breaks on any child change
 test('renders dashboard', () => {
-  const tree = renderer.create(<Dashboard />).toJSON();
-  expect(tree).toMatchSnapshot(); // massive snapshot
+  const { container } = render(<Dashboard />);
+  expect(container.firstChild).toMatchSnapshot(); // massive snapshot
 });
 ```
 

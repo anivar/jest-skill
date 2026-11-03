@@ -396,7 +396,9 @@ Tests sharing mutable state break when run in different order or individually.
 const items = [];
 test('adds', () => { items.push('a'); expect(items).toHaveLength(1); });
 test('adds more', () => { items.push('b'); expect(items).toHaveLength(2); }); // order-dependent
+```
 
+```javascript
 // CORRECT
 let items;
 beforeEach(() => { items = []; });
@@ -489,7 +491,7 @@ Large snapshots get rubber-stamp updated. Prefer specific matchers, then inline 
 
 ```javascript
 // INCORRECT — 500-line snapshot
-expect(renderer.create(<Page />).toJSON()).toMatchSnapshot();
+expect(render(<Page />).container.firstChild).toMatchSnapshot();
 
 // CORRECT — targeted
 expect(getByTestId('greeting')).toMatchSnapshot();

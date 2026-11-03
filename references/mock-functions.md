@@ -204,11 +204,12 @@ replaced.restore(); // or use restoreMocks config
 
 ```typescript
 import { jest } from '@jest/globals'; // the Mocked type is jest.Mocked, not a named export
+import * as api from './api';
 
-// Type a mocked module
+// Type a mocked module. Pass the import: require() returns any, so jest.mocked(require('./api')) is not typed.
 jest.mock('./api');
-const api = jest.mocked(require('./api'));
-// api.fetchUser is now typed as jest.Mock<typeof fetchUser>
+const mockedApi = jest.mocked(api);
+// mockedApi.fetchUser is typed as jest.MockedFunction<typeof api.fetchUser>
 
 // Type a single mock function
 const fn = jest.fn<(x: number) => string>();

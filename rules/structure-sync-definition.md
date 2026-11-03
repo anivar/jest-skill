@@ -29,7 +29,7 @@ Jest discovers tests by running the file synchronously and collecting all `test(
 
 ```javascript
 // BUG: Tests inside .then() are never registered
-fetch('/api/test-cases').then(cases => {
+fetch('/api/test-cases').then(r => r.json()).then(cases => {
   cases.forEach(c => {
     test(c.name, () => {
       expect(run(c.input)).toBe(c.output);

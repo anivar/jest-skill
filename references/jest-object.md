@@ -267,11 +267,16 @@ See [Mock Functions Reference](./mock-functions.md).
 
 TypeScript helper — wraps a module or function with mock types.
 
-```javascript
+```typescript
+import * as api from './api';
+
 jest.mock('./api');
-const api = jest.mocked(require('./api'));
-// api.fetchUser is typed as jest.MockedFunction<typeof fetchUser>
+const mockedApi = jest.mocked(api);
+// mockedApi.fetchUser is typed as jest.MockedFunction<typeof api.fetchUser>
 ```
+
+Pass an imported module or function. `require()` returns `any` in TypeScript, so
+`jest.mocked(require('./api'))` is not typed.
 
 ### `jest.fn(implementation?)`
 

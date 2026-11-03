@@ -255,12 +255,12 @@ jest.restoreAllMocks(); // restore spied/mocked implementations
 ## TypeScript: Typing Mocked Modules
 
 ```typescript
-jest.mock('./api');
-const { fetchUser } = jest.mocked(require('./api'));
-// fetchUser is typed as jest.MockedFunction<typeof fetchUser>
-
-// Or import then cast
 import { fetchUser } from './api';
+
 jest.mock('./api');
 const mockedFetchUser = jest.mocked(fetchUser);
+// mockedFetchUser is typed as jest.MockedFunction<typeof fetchUser>
 ```
+
+Pass the imported function or module. `require()` returns `any` in TypeScript, so
+`jest.mocked(require('./api'))` gives an untyped value.
