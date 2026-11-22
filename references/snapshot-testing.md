@@ -1,5 +1,17 @@
 # Snapshot Testing Reference
 
+## Contents
+
+- Basic Usage
+- Property Matchers
+- Updating Snapshots
+- Snapshot Files
+- Custom Serializers
+- Snapshot Format
+- Best Practices
+- toThrowErrorMatchingSnapshot
+- Asymmetric Matchers in Snapshots
+
 ## Basic Usage
 
 ### `toMatchSnapshot(propertyMatchers?, hint?)`

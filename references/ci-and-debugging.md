@@ -1,5 +1,13 @@
 # CI & Debugging Reference
 
+## Contents
+
+- CI Optimization
+- Debugging
+- Troubleshooting
+- Watch Mode
+- Reporters
+
 ## CI Optimization
 
 ### Worker Configuration

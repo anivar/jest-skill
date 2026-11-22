@@ -1,5 +1,17 @@
 # Mock Functions Reference
 
+## Contents
+
+- Creating Mocks
+- Mock Return Values
+- Mock Implementations
+- The `.mock` Property
+- Clearing, Resetting, Restoring
+- Mock Matchers
+- Mocking Modules
+- Replacing Properties
+- TypeScript Helpers
+
 ## Creating Mocks
 
 ### `jest.fn()`

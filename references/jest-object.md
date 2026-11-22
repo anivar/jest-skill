@@ -2,6 +2,16 @@
 
 The `jest` object is available globally in every test file. It provides methods for mocking, timer control, module manipulation, and test configuration.
 
+## Contents
+
+- Module Mocking
+- ESM Mocking
+- Timer Mocking
+- Mock Cleanup
+- Test Configuration
+- Property Replacement
+- Misc
+
 ## Module Mocking
 
 ### `jest.mock(moduleName, factory?, options?)`

@@ -30,6 +30,20 @@ module.exports = mergeConfig(
 );
 ```
 
+## Contents
+
+- Test File Discovery
+- Transform
+- Module Resolution
+- Test Environment
+- Coverage
+- Mock Configuration
+- Setup Files
+- Execution
+- Projects (Monorepo)
+- Snapshot
+- Watch Plugins
+
 ## Test File Discovery
 
 ### `testMatch`

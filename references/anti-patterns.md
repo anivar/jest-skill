@@ -2,6 +2,24 @@
 
 Common Jest mistakes that cause silent failures, flaky tests, or false positives. Each pattern includes the bug, why it's wrong, and the fix.
 
+## Contents
+
+- 1. Floating Promise — Assertions Never Run
+- 2. Missing expect.assertions — Silent Skip
+- 3. toBe on Objects — Reference Comparison
+- 4. toThrow Without Wrapper
+- 5. clearAllMocks Instead of restoreAllMocks
+- 6. Shared Mutable State
+- 7. runAllTimers With Recursive Timers
+- 8. Mock Factory Referencing Outer Variables
+- 9. Forgetting jest.requireActual in Partial Mocks
+- 10. Test Defined in Async Context
+- 11. Not Awaiting .resolves/.rejects
+- 12. done With try but No catch
+- 13. Forgetting useRealTimers in afterEach
+- 14. Large Snapshots That Get Rubber-Stamp Updated
+- 15. Sync Timer Methods With Async Code
+
 ## 1. Floating Promise — Assertions Never Run
 
 ```javascript

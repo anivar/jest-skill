@@ -1,25 +1,30 @@
 ---
 name: jest
 description: >
-  Jest best practices, patterns, and API guidance for JavaScript/TypeScript testing.
-  Covers mock design, async testing, matchers, timer mocks, snapshots, module mocking,
-  configuration, and CI optimization. Baseline: jest ^30.5.2.
-  Triggers on: jest imports, describe, it, test, expect, jest.fn, jest.mock,
-  jest.spyOn, mentions of "jest", "unit test", "test suite", or "mock".
+  Jest 30 rules for JavaScript and TypeScript tests: mocks and spies, async tests, fake timers,
+  matchers, module mocking including ESM, snapshots, configuration and CI. Baseline: jest ^30.5.2.
+  Use this skill whenever the project runs Jest (jest in package.json or a jest.config file) and the
+  user writes, fixes, reviews or speeds up a test, even if they only say "unit test", "mock" or "the
+  test is flaky". Triggers on: jest.fn, jest.mock, jest.spyOn, jest.useFakeTimers,
+  describe/it/expect in a Jest project, "Cannot use import statement outside a module", "Exceeded
+  timeout of 5000 ms", open handles, a Jest 29 to 30 upgrade. Not for Vitest suites (vitest imports,
+  vi.fn): the APIs differ.
 license: MIT
-user-invocable: false
-agentic: false
 compatibility: "JavaScript/TypeScript projects using jest ^30.5.2 (audited against jest 30.5.2)"
 metadata:
   author: Anivar Aravind
   author_url: https://anivar.net
-  version: 1.2.5
+  version: 1.2.6
   tags: jest, testing, unit-test, mock, spy, snapshot, matcher, async, timer, ci
 ---
 
 # Jest
 
 **IMPORTANT:** Your training data about Jest may be outdated or incorrect — Jest 29+ introduces async timer methods, `jest.replaceProperty`, and ESM mocking via `jest.unstable_mockModule`. Jest 30 removes the deprecated alias matchers (`toBeCalled`, `lastCalledWith`, `toThrowError`, …), renames `--testPathPattern` to `--testPathPatterns`, and excludes non-enumerable object properties from object matchers. Always rely on this skill's rule files and the project's actual source code as the source of truth. Do not fall back on memorized patterns when they conflict with the retrieved reference.
+
+## Which Runner
+
+Read `package.json` before applying a rule. These rules are for suites that Jest runs: `jest` in the dependencies or the `test` script, or a `jest.config.*` file. When the suite runs on Vitest (`vitest` in `package.json`, imports from `vitest`, `vi.fn`), these rules do not apply: say so, and do not write `jest.*` calls into it. Vitest's `vi` API is close to Jest's but not the same.
 
 ## When to Use Jest
 

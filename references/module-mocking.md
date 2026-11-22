@@ -1,5 +1,18 @@
 # Module Mocking Reference
 
+## Contents
+
+- jest.mock — Standard Module Mock
+- Manual Mocks — `__mocks__` Directory
+- jest.doMock — Non-Hoisted Mock
+- jest.isolateModules — Sandboxed Registry
+- jest.requireActual — Bypass Mocks
+- ESM Mocking — jest.unstable_mockModule
+- Hoisting Behavior
+- Mock Verification
+- Clearing Module Mocks
+- TypeScript: Typing Mocked Modules
+
 ## jest.mock — Standard Module Mock
 
 ### Auto-mock (no factory)

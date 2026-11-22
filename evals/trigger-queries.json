@@ -1,0 +1,66 @@
+[
+  {
+    "query": "tests in src/__tests__/cart.test.ts fail with 'Cannot use import statement outside a module' since I added lodash-es",
+    "should_trigger": true
+  },
+  {
+    "query": "this test passes locally and fails in CI maybe 1 in 5 runs. it waits on a debounce with setTimeout. config is jest.config.ts",
+    "should_trigger": true
+  },
+  {
+    "query": "upgrade us from jest 29 to 30. CI passes --testPathPattern and we use toBeCalledWith everywhere",
+    "should_trigger": true
+  },
+  {
+    "query": "mock axios in my tests but keep the real isAxiosError helper",
+    "should_trigger": true
+  },
+  {
+    "query": "'Jest did not exit one second after the test run has completed' on the db tests, something about open handles",
+    "should_trigger": true
+  },
+  {
+    "query": "write unit tests for utils/price.ts — repo uses jest with ts-jest",
+    "should_trigger": true
+  },
+  {
+    "query": "our jest run takes 9 minutes in CI, how do I make it faster",
+    "should_trigger": true
+  },
+  {
+    "query": "snapshot tests break every time a date changes, fix them properly",
+    "should_trigger": true
+  },
+  {
+    "query": "vitest: vi.mock isn't hoisting my factory, help",
+    "should_trigger": false
+  },
+  {
+    "query": "write a playwright e2e test for the checkout flow",
+    "should_trigger": false
+  },
+  {
+    "query": "set up pytest fixtures for the django order models",
+    "should_trigger": false
+  },
+  {
+    "query": "our cypress component tests flake on CI",
+    "should_trigger": false
+  },
+  {
+    "query": "write a k6 load test for the orders API",
+    "should_trigger": false
+  },
+  {
+    "query": "the mocha tests in legacy/ use sinon stubs, add one for the mailer",
+    "should_trigger": false
+  },
+  {
+    "query": "with the node:test runner, how do I mock a module",
+    "should_trigger": false
+  },
+  {
+    "query": "fix the TypeScript error in src/cart.ts line 42: Property 'total' does not exist on type 'Cart'",
+    "should_trigger": false
+  }
+]

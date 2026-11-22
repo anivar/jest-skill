@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.6
+
+Checked against **jest 30.5.2**, as in 1.2.5.
+
+### Changed
+
+- **Which Runner.** The skill reads `package.json` first. On a Vitest suite the skill says so and writes no `jest.*` calls.
+- The description says when to load the skill: a project that runs Jest and a test to write, fix, review or speed up, even when the user only says "unit test" or "mock". It names the Jest errors that point at it ("Cannot use import statement outside a module", "Exceeded timeout of 5000 ms", open handles) and says it is not for Vitest suites.
+- The frontmatter carries only the fields of the Agent Skills specification. `user-invocable: false` and `agentic: false` are removed: `agentic` is not a field of the specification, and claude.ai and the Skills API refuse a skill whose frontmatter has a key outside the specification. In Claude Code, `/jest` now loads the skill by hand.
+- Each reference file over 100 lines opens with a contents list, so a partial read still shows what the file covers.
+
 ## 1.2.5
 
 Checked against **jest 30.5.2**.

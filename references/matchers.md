@@ -1,5 +1,19 @@
 # Matchers Reference
 
+## Contents
+
+- Equality Matchers
+- Truthiness Matchers
+- Number Matchers
+- String Matchers
+- Array/Iterable Matchers
+- Object Matchers
+- Error Matchers
+- Promise Matchers
+- Asymmetric Matchers
+- Custom Matchers
+- Mock Function Matchers
+
 ## Equality Matchers
 
 ### `toBe(value)`

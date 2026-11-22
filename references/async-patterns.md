@@ -1,5 +1,18 @@
 # Async Testing Patterns Reference
 
+## Contents
+
+- async/await (Preferred)
+- Returning Promises
+- .resolves / .rejects
+- done Callback (Legacy)
+- expect.assertions(n)
+- expect.hasAssertions()
+- Testing Rejected Promises
+- Testing Async Iteration
+- Common Mistakes
+- Timeouts
+
 ## async/await (Preferred)
 
 The simplest and safest pattern. The test function is `async`, and you `await` async operations.
